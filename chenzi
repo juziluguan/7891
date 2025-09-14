@@ -1,0 +1,245 @@
+local WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Jay1086086/-/8b5e058310d12179309f3d9b80787fd3f5978207/main-2.lua"))()
+local lp = game.Players.LocalPlayer
+local Tw = game:GetService('TweenService')
+local dz = {
+    Cooldown = 0
+}
+local function autogetmoney()
+    Tw:Create(lp.Character:FindFirstChild('HumanoidRootPart'), TweenInfo.new(4), {Position = Vector3.new(584.049560546875, -154.04788208007812, -1490.4249267578125)}):Play()
+end
+
+WindUI:Localization({
+    Enabled = true,
+    Prefix = "loc:",
+    DefaultLanguage = "en",
+    Translations = {
+        ["ru"] = {
+            ["WINDUI_EXAMPLE"] = "WindUI Пример",
+            ["WELCOME"] = "Добро пожаловать в WindUI!",
+            ["LIB_DESC"] = "Библиотека для создания красивых интерфейсов",
+            ["SETTINGS"] = "Настройки",
+            ["APPEARANCE"] = "Внешний вид",
+            ["FEATURES"] = "Функционал",
+            ["UTILITIES"] = "Инструменты",
+            ["UI_ELEMENTS"] = "UI Элементы",
+            ["CONFIGURATION"] = "Конфигурация",
+            ["SAVE_CONFIG"] = "Сохранить конфигурацию",
+            ["LOAD_CONFIG"] = "Загрузить конфигурацию",
+            ["THEME_SELECT"] = "Выберите тему",
+            ["TRANSPARENCY"] = "Прозрачность окна"
+        },
+        ["en"] = {
+            ["WINDUI_EXAMPLE"] = "WindUI Example",
+            ["WELCOME"] = "Welcome to WindUI!",
+            ["LIB_DESC"] = "Beautiful UI library for Roblox",
+            ["SETTINGS"] = "Settings",
+            ["APPEARANCE"] = "Appearance",
+            ["FEATURES"] = "Features",
+            ["UTILITIES"] = "Utilities",
+            ["UI_ELEMENTS"] = "UI Elements",
+            ["CONFIGURATION"] = "Configuration",
+            ["SAVE_CONFIG"] = "Save Configuration",
+            ["LOAD_CONFIG"] = "Load Configuration",
+            ["THEME_SELECT"] = "Select Theme",
+            ["TRANSPARENCY"] = "Window Transparency"
+        }
+    }
+})
+
+WindUI.TransparencyValue = 0.2
+WindUI:SetTheme("Dark")
+
+local function gradient(text, startColor, endColor)
+    local result = ""
+    for i = 1, #text do
+        local t = (i - 1) / (#text - 1)
+        local r = math.floor((startColor.R + (endColor.R - startColor.R) * t) * 255)
+        local g = math.floor((startColor.G + (endColor.G - startColor.G) * t) * 255)
+        local b = math.floor((startColor.B + (endColor.B - startColor.B) * t) * 255)
+        result = result .. string.format('<font color="rgb(%d,%d,%d)">%s</font>', r, g, b, text:sub(i, i))
+    end
+    return result
+end
+
+WindUI:Popup({
+    Title = "欢迎使用橙子脚本",
+    Icon = "sparkles",
+    Content = "此脚本缝合 但永久免费! 感谢使用",
+    Buttons = {
+        {
+            Title = "进入脚本",
+            Icon = "arrow-right",
+            Variant = "Primary",
+            Callback = function() 
+                print("进入脚本")
+                createMainWindow()
+            end
+        }
+    }
+})
+
+local Window = WindUI:CreateWindow({
+    Title = "穷小子打工--橙子",
+    Icon = "palette",
+    Author = "橙子",
+    Folder = "WindUI_Example",
+    Size = UDim2.fromOffset(700, 500),
+    Theme = "Dark",
+    User = {
+        Enabled = true,
+        Anonymous = true,
+        Callback = function()
+            WindUI:Notify({
+                Title = "User Profile",
+                Content = "User profile clicked!",
+                Duration = 3
+            })
+        end
+    },
+    SideBarWidth = 220,
+    ScrollBarEnabled = true
+})
+
+Window:Tag({
+    Title = "脚本偏向公用",
+    Color = Color3.fromHex("#30ff6a")
+})
+Window:Tag({
+    Title = "感谢使用",
+})
+
+Window:CreateTopbarButton("theme-switcher", "moon", function()
+    WindUI:SetTheme(WindUI:GetCurrentTheme() == "Dark" and "Light" or "Dark")
+    WindUI:Notify({
+        Title = "Theme Changed",
+        Content = "Current theme: "..WindUI:GetCurrentTheme(),
+        Duration = 2
+    })
+end, 990)
+
+local Tabs = {
+    Player = Window:Section({ Title = "玩家", Opened = true }),
+    Money = Window:Section({ Title = "钱", Opened = true }),
+    Auto = Window:Section({ Title = "自动", Opened = true }),
+    base = Window:Section({ Title = "其他", Opened = true })
+}
+
+local TabHandles = {
+    Player1 = Tabs.Player:Tab({ Title = "基础玩家", Icon = "user" }),
+    Money = Tabs.Money:Tab({ Title = "矿区", Icon = "circle-dollar-sign" }),
+    Shop = Tabs.Auto:Tab({ Title = "购买&售卖", Icon = "shopping-cart" }),
+    JG = Tabs.base:Tab({ Title = "井盖", Icon = "circle" })
+}
+
+--基础玩家
+TabHandles.Player1:Slider({
+    Title = "玩家速度",
+    Desc = "修改玩家速度",
+    Value = { Min = 16, Max = 200, Default = 16 },
+    Callback = function(Value)
+		while task.wait() do
+            lp.Character.Humanoid.WalkSpeed = Value
+        end
+    end
+})
+
+TabHandles.Player1:Slider({
+    Title = "玩家跳跃高度",
+    Desc = "修改玩家跳跃高度",
+    Value = { Min = 16, Max = 200, Default = 16 },
+    Callback = function(Value)
+		while task.wait() do
+            lp.Character.Humanoid.JumpPower = Value
+        end
+    end
+})
+
+TabHandles.Player1:Slider({
+    Title = "玩家镜头FOV",
+    Desc = "修改玩家镜头FOV",
+    Value = { Min = 70, Max = 120, Default = 70 },
+    Callback = function(Value)
+		while task.wait() do
+            workspace.CurrentCamera.FieldOfView = Value
+        end
+    end
+})
+--钱
+local function setAllCollision(state)
+    if lp.Character then
+        for _, v in pairs(lp.Character:GetDescendants()) do
+            if v:IsA("BasePart") then v.CanCollide = state end
+        end
+    end
+    for _, v in pairs(workspace:GetDescendants()) do
+        if v:IsA("BasePart") and v.Parent ~= lp.Character then
+            v.CanCollide = state
+        end
+    end
+end
+
+local tweening = nil
+TabHandles.Money:Button({
+    Title = "传送到深层挖矿处",
+    Icon = false,
+    Variant = "传送",
+    Callback = function()
+        Tw:Create(lp.Character:FindFirstChild('HumanoidRootPart'), TweenInfo.new(4), {Position = Vector3.new(413.27655029296875, 15.863042831420898, -1159.9659423828125)}):Play()
+        task.wait(4)
+        Tw:Create(lp.Character:FindFirstChild('HumanoidRootPart'), TweenInfo.new(4), {Position = Vector3.new(570.1128540039062, -14.999955177307129, -1206.684814453125)}):Play()
+        task.wait(4)
+        Tw:Create(lp.Character:FindFirstChild('HumanoidRootPart'), TweenInfo.new(4), {Position = Vector3.new(440.59765625, -35.999969482421875, -1188.847412109375)}):Play()
+        task.wait(4)
+        Tw:Create(lp.Character:FindFirstChild('HumanoidRootPart'), TweenInfo.new(4), {Position = Vector3.new(430.40777587890625, -35.999969482421875, -1256.5714111328125)}):Play()
+        task.wait(4)
+        Tw:Create(lp.Character:FindFirstChild('HumanoidRootPart'), TweenInfo.new(4), {Position = Vector3.new(485.6332702636719, -35.999977111816406, -1260.9403076171875)}):Play()
+        task.wait(4)
+        Tw:Create(lp.Character:FindFirstChild('HumanoidRootPart'), TweenInfo.new(4), {Position = Vector3.new(493.6316833496094, -52.50237274169922, -1232.2523193359375)}):Play()
+        task.wait(4)
+        Tw:Create(lp.Character:FindFirstChild('HumanoidRootPart'), TweenInfo.new(4), {Position = Vector3.new(493.8387145996094, -52.5, -1195.2239990234375)}):Play()
+        task.wait(4)
+        Tw:Create(lp.Character:FindFirstChild('HumanoidRootPart'), TweenInfo.new(4), {Position = Vector3.new(422.5557556152344, -52.55000305175781, -1195.72509765625)}):Play()
+        task.wait(4)
+        Tw:Create(lp.Character:FindFirstChild('HumanoidRootPart'), TweenInfo.new(4), {Position = Vector3.new(412.3038635253906, -151.62164306640625, -1193.290283203125)}):Play()
+        task.wait(4)
+        Tw:Create(lp.Character:FindFirstChild('HumanoidRootPart'), TweenInfo.new(4), {Position = Vector3.new(445.5766906738281, -151.50543212890625, -1194.0701904296875)}):Play()
+        task.wait(4)
+        Tw:Create(lp.Character:FindFirstChild('HumanoidRootPart'), TweenInfo.new(4), {Position = Vector3.new(442.99395751953125, -151.63998413085938, -1256.7021484375)}):Play()
+        task.wait(4)
+        Tw:Create(lp.Character:FindFirstChild('HumanoidRootPart'), TweenInfo.new(4), {Position = Vector3.new(559.0991821289062, -150.05416870117188, -1342.0850830078125)}):Play()
+        task.wait(4)
+        Tw:Create(lp.Character:FindFirstChild('HumanoidRootPart'), TweenInfo.new(4), {Position = Vector3.new(574.2963256835938, -149.8660888671875, -1379.2008056640625)}):Play()
+        task.wait(4)
+        Tw:Create(lp.Character:FindFirstChild('HumanoidRootPart'), TweenInfo.new(4), {Position = Vector3.new(614.8255615234375, -152.63656616210938, -1382.8101806640625)}):Play()
+        task.wait(4)
+        Tw:Create(lp.Character:FindFirstChild('HumanoidRootPart'), TweenInfo.new(4), {Position = Vector3.new(619.3616943359375, -154.04315185546875, -1418.4635009765625)}):Play()
+    end
+})
+
+TabHandles.Money:Toggle({
+    Title = "零延迟挖矿",
+    Desc = "快速挖矿",
+    Value = false,
+    Callback = function(state)
+        local function processPrompts(obj)
+            for _, child in pairs(obj:GetChildren()) do
+                if child:IsA("ProximityPrompt") then
+                    print('找到 ProximityPrompt')
+                    child.HoldDuration = state and 0 or 2.5
+                end
+                processPrompts(child)
+            end
+        end
+
+        processPrompts(game.Workspace)
+    end
+})
+
+--售卖
+TabHandles.Shop:Button({
+    Title = "自动售卖",
+    Icon = false,
+    Variant = "自动",
+    Callback = function() 
+    end
+})
