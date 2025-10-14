@@ -1,4 +1,4 @@
--- 卡密验证系统 - 完整修复版
+-- 卡密验证系统 - 最终修复版
 print("=== 巨子卡密系统启动 ===")
 
 -- 检查各种可能的环境变量
@@ -37,15 +37,18 @@ local function validateKey(key)
     print("卡密数据获取成功")
     print("原始卡密数据:", keyData)
     
-    -- 解析卡密数据
+    -- 解析卡密数据 - 修复版
     local validKeys = {}
     for line in keyData:gmatch("[^\r\n]+") do
         if line:find("VALID_KEYS=") then
             local keysStr = line:gsub("VALID_KEYS=", "")
-            for validKey in keysStr:gmatch("[^,]+") do
-                local cleanKey = validKey:gsub("^%s*(.-)%s*$", "%1")
-                if cleanKey ~= "" then
-                    table.insert(validKeys, cleanKey)
+            for validKey in keysStr:gmatch("([^,]+)") do
+                if validKey and type(validKey) == "string" then
+                    local cleanKey = validKey:match("^%s*(.-)%s*$") or ""
+                    if cleanKey ~= "" then
+                        table.insert(validKeys, cleanKey)
+                        print("添加卡密到列表:", cleanKey)
+                    end
                 end
             end
         end
