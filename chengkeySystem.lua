@@ -5,7 +5,7 @@ local function validateKey(key)
     end
     
     -- 使用你的仓库地址
-    local keyDatabaseURL = "https://raw.githubusercontent.com/juziluguan/juziniubi/main/keys.txt"
+local keyDatabaseURL = "https://raw.githubusercontent.com/juziluguan/7891/refs/heads/main/chengkeys.txt"
     
     -- 从云端获取有效卡密列表
     local success, keyData = pcall(function()
