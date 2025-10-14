@@ -1,4 +1,4 @@
--- 卡密验证系统 - 最终版
+-- 卡密验证系统 - 调试版
 print("=== 巨子卡密系统启动 ===")
 
 -- 检查卡密
@@ -36,12 +36,14 @@ if keyData:find("VALID_KEYS=") then
     local validKeysString = keyData:match("VALID_KEYS=([^\r\n]*)") or ""
     print("有效卡密字符串:", validKeysString)
     
-    -- 精确匹配卡密
+    -- 精确匹配卡密（带调试信息）
     local isValid = false
     for key in validKeysString:gmatch("([^,]+)") do
         local cleanKey = key:match("^%s*(.-)%s*$") or ""
+        print("对比: '" .. userKey .. "' vs '" .. cleanKey .. "'")
         if cleanKey == userKey then
             isValid = true
+            print("匹配成功!")
             break
         end
     end
