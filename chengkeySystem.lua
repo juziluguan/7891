@@ -1,5 +1,4 @@
-
--- 卡密验证系统 - 超级简化版
+-- 卡密验证系统 - 最终版
 print("=== 巨子卡密系统启动 ===")
 
 -- 检查卡密
@@ -15,7 +14,7 @@ end
 
 print("用户卡密:", userKey)
 
--- 直接验证卡密（跳过复杂的解析）
+-- 获取卡密数据
 local keyDatabaseURL = "https://raw.githubusercontent.com/juziluguan/7891/refs/heads/main/chengkeys.txt"
 local success, keyData = pcall(function()
     return game:HttpGet(keyDatabaseURL)
@@ -32,13 +31,22 @@ end
 
 print("获取到的卡密数据:", keyData)
 
--- 简单直接的验证方法
+-- 验证卡密
 if keyData:find("VALID_KEYS=") then
     local validKeysString = keyData:match("VALID_KEYS=([^\r\n]*)") or ""
     print("有效卡密字符串:", validKeysString)
     
-    -- 直接检查是否包含用户卡密
-    if validKeysString:find(userKey) then
+    -- 精确匹配卡密
+    local isValid = false
+    for key in validKeysString:gmatch("([^,]+)") do
+        local cleanKey = key:match("^%s*(.-)%s*$") or ""
+        if cleanKey == userKey then
+            isValid = true
+            break
+        end
+    end
+    
+    if isValid then
         print("卡密验证成功!")
         game:GetService("StarterGui"):SetCore("SendNotification",{
             Title = "成功",
