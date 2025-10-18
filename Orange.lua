@@ -1,83 +1,8 @@
--- 橙c美式UI库 v1.0 - 翻译替换版
+-- 橙c美式UI库 v1.0 - 实用版
 local OrangeUI = {}
-
--- 关闭对话框文字翻译表
-local CloseTranslations = {
-    ["Close Window"] = "关闭橙c美式",
-    ["Do you want to close this window? You will not be able to open it again."] = "确定要关闭橙c美式UI吗？关闭后将无法再次打开。",
-    ["Cancel"] = "取消",
-    ["Close Window"] = "确定关闭"
-}
-
-local function translateCloseText(text)
-    if not text or type(text) ~= "string" then return text end
-    
-    if CloseTranslations[text] then
-        return CloseTranslations[text]
-    end
-    
-    for en, cn in pairs(CloseTranslations) do
-        if text:find(en) then
-            return text:gsub(en, cn)
-        end
-    end
-    
-    return text
-end
-
-local function setupCloseTranslation()
-    local translated = {}
-    
-    local function scanAndTranslateClose()
-        for _, gui in ipairs(game:GetService("CoreGui"):GetDescendants()) do
-            if (gui:IsA("TextLabel") or gui:IsA("TextButton") or gui:IsA("TextBox")) and not translated[gui] then
-                pcall(function()
-                    local text = gui.Text
-                    if text and text ~= "" then
-                        local translatedText = translateCloseText(text)
-                        if translatedText ~= text then
-                            gui.Text = translatedText
-                            translated[gui] = true
-                        end
-                    end
-                end)
-            end
-        end
-    end
-    
-    local function setupCloseDescendantListener(parent)
-        parent.DescendantAdded:Connect(function(descendant)
-            if descendant:IsA("TextLabel") or descendant:IsA("TextButton") or descendant:IsA("TextBox") then
-                task.wait(0.1)
-                pcall(function()
-                    local text = descendant.Text
-                    if text and text ~= "" then
-                        local translatedText = translateCloseText(text)
-                        if translatedText ~= text then
-                            descendant.Text = translatedText
-                        end
-                    end
-                end)
-            end
-        end)
-    end
-    
-    pcall(setupCloseDescendantListener, game:GetService("CoreGui"))
-    
-    -- 持续扫描翻译
-    coroutine.wrap(function()
-        while true do
-            scanAndTranslateClose()
-            task.wait(1)
-        end
-    end)()
-end
 
 function OrangeUI:Init(config)
     config = config or {}
-    
-    -- 启动翻译引擎
-    setupCloseTranslation()
     
     self.WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"))()
     
