@@ -1,4 +1,4 @@
--- 橙c美式UI库 v1.0 - 修复版
+-- 橙c美式UI库 v1.0 - 带欢迎弹窗和时间标签
 local OrangeUI = {}
 
 function OrangeUI:Init(config)
@@ -6,6 +6,28 @@ function OrangeUI:Init(config)
     
     self.WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"))()
     
+    -- 显示欢迎弹窗
+    self.WindUI:Popup({
+        Title = "欢迎使用橙C美式",
+        Icon = "sparkles",
+        Content = "我的一个半缝合脚本",
+        Buttons = {
+            {
+                Title = "进入脚本",
+                Icon = "arrow-right",
+                Variant = "Primary",
+                Callback = function() 
+                    print("进入脚本")
+                    self:createMainWindow(config)
+                end
+            }
+        }
+    })
+    
+    return self
+end
+
+function OrangeUI:createMainWindow(config)
     self.Window = self.WindUI:CreateWindow({
         Title = config.Title or "橙c美式",
         Size = config.Size or UDim2.fromOffset(400, 300),
@@ -15,8 +37,47 @@ function OrangeUI:Init(config)
         Resizable = config.Resizable or false
     })
     
+    -- 创建时间标签
+    self.TimeTag = self.Window:Tag({
+        Title = "00:00:00",
+        Color = Color3.fromHex("#FFA500")
+    })
+    
+    -- 创建版本标签
+    self.VersionTag = self.Window:Tag({
+        Title = "v1.0",
+        Color = Color3.fromHex("#FFA500")
+    })
+    
+    -- 更新时间
+    task.spawn(function()
+        while true do
+            local now = os.date("*t")
+            local hours = string.format("%02d", now.hour)
+            local minutes = string.format("%02d", now.min)
+            local seconds = string.format("%02d", now.sec)
+            
+            self.TimeTag:SetTitle(hours .. ":" .. minutes .. ":" .. seconds)
+            task.wait(1)
+        end
+    end)
+    
     self.Tabs = {}
     return self
+end
+
+-- 更新时间标签
+function OrangeUI:updateTimeTag(timeText)
+    if self.TimeTag then
+        self.TimeTag:SetTitle(timeText)
+    end
+end
+
+-- 更新版本标签
+function OrangeUI:updateVersionTag(versionText)
+    if self.VersionTag then
+        self.VersionTag:SetTitle(versionText)
+    end
 end
 
 function OrangeUI:cz(title)
