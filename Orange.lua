@@ -1,4 +1,4 @@
--- 橙c美式UI库 v1.0 - 带标签位置定义
+-- 橙c美式UI库 v1.0 - 带可拖动标签
 local OrangeUI = {}
 
 function OrangeUI:Init(config)
@@ -47,7 +47,7 @@ function OrangeUI:createMainWindow(config)
     return self
 end
 
--- 定义标签位置
+-- 定义标签位置（所有标签默认可拖动）
 function OrangeUI:tag(position, title, color, radius)
     position = position or "right" -- 默认在右侧
     
@@ -60,7 +60,74 @@ function OrangeUI:tag(position, title, color, radius)
     -- 存储标签对象
     table.insert(self.Tags[position], tagObj)
     
+    -- 立即添加拖动功能
+    self:makeTagDraggable(tagObj)
+    
     return tagObj
+end
+
+-- 使标签可拖动
+function OrangeUI:makeTagDraggable(tagObj)
+    -- 等待标签实例创建
+    local maxAttempts = 10
+    local attempt = 0
+    
+    local function attemptMakeDraggable()
+        attempt = attempt + 1
+        if attempt > maxAttempts then return end
+        
+        if tagObj and tagObj.Instance then
+            local frame = tagObj.Instance
+            local dragToggle = false
+            local dragInput, dragStart, startPos
+            
+            -- 鼠标按下事件
+            frame.InputBegan:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                    dragToggle = true
+                    dragStart = input.Position
+                    startPos = frame.Position
+                    
+                    -- 提高标签层级
+                    frame.ZIndex = 10
+                    
+                    input.Changed:Connect(function()
+                        if input.UserInputState == Enum.UserInputState.End then
+                            dragToggle = false
+                            frame.ZIndex = 1 -- 恢复层级
+                        end
+                    end)
+                end
+            end)
+            
+            -- 鼠标移动事件
+            frame.InputChanged:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.MouseMovement then
+                    dragInput = input
+                end
+            end)
+            
+            -- 更新位置
+            game:GetService("UserInputService").InputChanged:Connect(function(input)
+                if input == dragInput and dragToggle then
+                    local delta = input.Position - dragStart
+                    frame.Position = UDim2.new(
+                        startPos.X.Scale, 
+                        startPos.X.Offset + delta.X,
+                        startPos.Y.Scale, 
+                        startPos.Y.Offset + delta.Y
+                    )
+                end
+            end)
+        else
+            -- 如果标签实例还没创建，稍后重试
+            task.wait(0.1)
+            attemptMakeDraggable()
+        end
+    end
+    
+    -- 开始尝试添加拖动功能
+    attemptMakeDraggable()
 end
 
 -- 批量创建标签
@@ -93,19 +160,23 @@ function OrangeUI:clearTags(position)
     end
 end
 
--- 创建时间标签（右侧）
+-- 创建时间标签（右侧）- 现在默认可拖动
 function OrangeUI:createTimeTag()
     self.TimeTag = self:tag("right", "00:00:00", Color3.fromHex("#FFA500"))
     
     -- 更新时间
     task.spawn(function()
-        while true do
+        while self.TimeTag do
             local now = os.date("*t")
             local hours = string.format("%02d", now.hour)
             local minutes = string.format("%02d", now.min)
             local seconds = string.format("%02d", now.sec)
             
-            self.TimeTag:SetTitle(hours .. ":" .. minutes .. ":" .. seconds)
+            if self.TimeTag and self.TimeTag.SetTitle then
+                pcall(function()
+                    self.TimeTag:SetTitle(hours .. ":" .. minutes .. ":" .. seconds)
+                end)
+            end
             task.wait(1)
         end
     end)
@@ -113,7 +184,7 @@ function OrangeUI:createTimeTag()
     return self.TimeTag
 end
 
--- 创建版本标签（右侧）
+-- 创建版本标签（右侧）- 现在默认可拖动
 function OrangeUI:createVersionTag(version)
     self.VersionTag = self:tag("right", version or "v1.0", Color3.fromHex("#FFA500"))
     return self.VersionTag
