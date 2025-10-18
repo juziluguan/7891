@@ -1,4 +1,4 @@
--- 橙c美式UI库 v1.0 - 带标签版
+-- 橙c美式UI库 v1.0 - 修复版
 local OrangeUI = {}
 
 function OrangeUI:Init(config)
@@ -35,15 +35,6 @@ function OrangeUI:settings(title)
     })
     self.Tabs[title or "设置"] = tab
     return tab
-end
-
--- 添加标签功能
-function OrangeUI:tag(title, color, radius)
-    return self.Window:Tag({
-        Title = title,
-        Color = color or Color3.fromRGB(255, 165, 0),
-        Radius = radius or 999
-    })
 end
 
 function OrangeUI:btn(tab, title, desc, callback)
