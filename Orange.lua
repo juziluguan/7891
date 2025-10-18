@@ -1,4 +1,4 @@
--- 橙c美式UI库 v1.0 - 带可拖动标签
+-- 橙c美式UI库 v1.0 - 修复标签拖动和删除问题
 local OrangeUI = {}
 
 function OrangeUI:Init(config)
@@ -39,14 +39,14 @@ function OrangeUI:createMainWindow(config)
     
     -- 标签容器
     self.Tags = {}
-    self.DraggableTags = {} -- 存储可拖动的标签
+    self.FixedTags = {} -- 存储固定标签
     
     self.Tabs = {}
     return self
 end
 
--- 创建可拖动的标签
-function OrangeUI:tag(position, title, color, radius)
+-- 创建标签（所有标签默认都可拖动）
+function OrangeUI:tag(title, color, radius, isFixed)
     local tagObj = self.Window:Tag({
         Title = title,
         Color = color or Color3.fromHex("#FFA500"),
@@ -56,7 +56,12 @@ function OrangeUI:tag(position, title, color, radius)
     -- 存储标签对象
     table.insert(self.Tags, tagObj)
     
-    -- 使标签可拖动
+    -- 如果是固定标签，单独存储
+    if isFixed then
+        table.insert(self.FixedTags, tagObj)
+    end
+    
+    -- 使所有标签都可拖动
     self:makeTagDraggable(tagObj)
     
     return tagObj
@@ -65,7 +70,12 @@ end
 -- 使标签可拖动
 function OrangeUI:makeTagDraggable(tagObj)
     local frame = tagObj.Instance -- 获取标签的实际Frame
-    if not frame then return end
+    if not frame then 
+        -- 如果无法立即获取frame，稍后重试
+        task.wait(0.1)
+        frame = tagObj.Instance
+        if not frame then return end
+    end
     
     local dragToggle = false
     local dragInput, dragStart, startPos
@@ -108,18 +118,15 @@ function OrangeUI:makeTagDraggable(tagObj)
             )
         end
     end)
-    
-    -- 存储为可拖动标签
-    table.insert(self.DraggableTags, tagObj)
 end
 
 -- 创建时间标签
 function OrangeUI:createTimeTag()
-    self.TimeTag = self:tag("时间", "00:00:00", Color3.fromHex("#FFA500"))
+    self.TimeTag = self:tag("00:00:00", Color3.fromHex("#FFA500"), 999, true)
     
     -- 更新时间
     task.spawn(function()
-        while true do
+        while self.TimeTag and self.TimeTag.Instance do
             local now = os.date("*t")
             local hours = string.format("%02d", now.hour)
             local minutes = string.format("%02d", now.min)
@@ -135,18 +142,53 @@ end
 
 -- 创建版本标签
 function OrangeUI:createVersionTag(version)
-    self.VersionTag = self:tag("版本", version or "v2.0", Color3.fromHex("#FFA500"))
+    self.VersionTag = self:tag(version or "v2.0", Color3.fromHex("#FFA500"), 999, true)
     return self.VersionTag
 end
 
 -- 创建脚本名称标签
 function OrangeUI:createScriptNameTag()
-    self.ScriptNameTag = self:tag("脚本名称", "橙C美式 2.0", Color3.fromHex("#FF6B35"))
+    self.ScriptNameTag = self:tag("橙C美式 2.0", Color3.fromHex("#FF6B35"), 999, true)
     return self.ScriptNameTag
 end
 
--- 修复：正确清除所有标签
+-- 修复：正确清除所有非固定标签
 function OrangeUI:clearTags()
+    local tagsToRemove = {}
+    
+    -- 找出所有非固定标签
+    for i, tag in ipairs(self.Tags) do
+        local isFixed = false
+        for _, fixedTag in ipairs(self.FixedTags) do
+            if tag == fixedTag then
+                isFixed = true
+                break
+            end
+        end
+        
+        if not isFixed then
+            table.insert(tagsToRemove, tag)
+        end
+    end
+    
+    -- 删除非固定标签
+    for _, tag in ipairs(tagsToRemove) do
+        for i, existingTag in ipairs(self.Tags) do
+            if existingTag == tag then
+                pcall(function() 
+                    if tag and tag.Instance then
+                        tag.Instance:Destroy()
+                    end
+                end)
+                table.remove(self.Tags, i)
+                break
+            end
+        end
+    end
+end
+
+-- 清除所有标签（包括固定标签）
+function OrangeUI:clearAllTags()
     for i, tag in ipairs(self.Tags) do
         pcall(function() 
             if tag and tag.Instance then
@@ -157,35 +199,7 @@ function OrangeUI:clearTags()
     
     -- 清空标签表
     self.Tags = {}
-    self.DraggableTags = {}
-    
-    -- 重新创建固定标签
-    self:createTimeTag()
-    self:createVersionTag("v2.0")
-    self:createScriptNameTag()
-end
-
--- 清除特定标签
-function OrangeUI:removeTag(tagToRemove)
-    for i, tag in ipairs(self.Tags) do
-        if tag == tagToRemove then
-            pcall(function() 
-                if tag and tag.Instance then
-                    tag.Instance:Destroy()
-                end
-            end)
-            table.remove(self.Tags, i)
-            break
-        end
-    end
-    
-    -- 也从可拖动标签中移除
-    for i, tag in ipairs(self.DraggableTags) do
-        if tag == tagToRemove then
-            table.remove(self.DraggableTags, i)
-            break
-        end
-    end
+    self.FixedTags = {}
 end
 
 -- 初始化所有固定标签
@@ -193,13 +207,6 @@ function OrangeUI:initFixedTags()
     self:createTimeTag()
     self:createVersionTag("v2.0")
     self:createScriptNameTag()
-end
-
--- 批量创建标签
-function OrangeUI:createTags(tagList)
-    for _, tagInfo in ipairs(tagList) do
-        self:tag(tagInfo.position, tagInfo.title, tagInfo.color, tagInfo.radius)
-    end
 end
 
 -- 获取所有标签
