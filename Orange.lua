@@ -1,4 +1,4 @@
--- 橙c美式UI库 v1.0 - 带欢迎弹窗和时间标签
+-- 橙c美式UI库 v1.0 - 带标签位置定义
 local OrangeUI = {}
 
 function OrangeUI:Init(config)
@@ -37,17 +37,65 @@ function OrangeUI:createMainWindow(config)
         Resizable = config.Resizable or false
     })
     
-    -- 创建时间标签
-    self.TimeTag = self.Window:Tag({
-        Title = "00:00:00",
-        Color = Color3.fromHex("#FFA500")
+    -- 标签容器
+    self.Tags = {
+        left = {},
+        right = {}
+    }
+    
+    self.Tabs = {}
+    return self
+end
+
+-- 定义标签位置
+function OrangeUI:tag(position, title, color, radius)
+    position = position or "right" -- 默认在右侧
+    
+    local tagObj = self.Window:Tag({
+        Title = title,
+        Color = color or Color3.fromHex("#FFA500"),
+        Radius = radius or 999
     })
     
-    -- 创建版本标签
-    self.VersionTag = self.Window:Tag({
-        Title = "v1.0",
-        Color = Color3.fromHex("#FFA500")
-    })
+    -- 存储标签对象
+    table.insert(self.Tags[position], tagObj)
+    
+    return tagObj
+end
+
+-- 批量创建标签
+function OrangeUI:createTags(tagList)
+    for _, tagInfo in ipairs(tagList) do
+        self:tag(tagInfo.position, tagInfo.title, tagInfo.color, tagInfo.radius)
+    end
+end
+
+-- 获取特定位置的所有标签
+function OrangeUI:getTags(position)
+    return self.Tags[position] or {}
+end
+
+-- 清除特定位置的所有标签
+function OrangeUI:clearTags(position)
+    if position then
+        for _, tag in ipairs(self.Tags[position] or {}) do
+            pcall(function() tag:Destroy() end)
+        end
+        self.Tags[position] = {}
+    else
+        -- 清除所有标签
+        for pos, tags in pairs(self.Tags) do
+            for _, tag in ipairs(tags) do
+                pcall(function() tag:Destroy() end)
+            end
+            self.Tags[pos] = {}
+        end
+    end
+end
+
+-- 创建时间标签（右侧）
+function OrangeUI:createTimeTag()
+    self.TimeTag = self:tag("right", "00:00:00", Color3.fromHex("#FFA500"))
     
     -- 更新时间
     task.spawn(function()
@@ -62,22 +110,13 @@ function OrangeUI:createMainWindow(config)
         end
     end)
     
-    self.Tabs = {}
-    return self
+    return self.TimeTag
 end
 
--- 更新时间标签
-function OrangeUI:updateTimeTag(timeText)
-    if self.TimeTag then
-        self.TimeTag:SetTitle(timeText)
-    end
-end
-
--- 更新版本标签
-function OrangeUI:updateVersionTag(versionText)
-    if self.VersionTag then
-        self.VersionTag:SetTitle(versionText)
-    end
+-- 创建版本标签（右侧）
+function OrangeUI:createVersionTag(version)
+    self.VersionTag = self:tag("right", version or "v1.0", Color3.fromHex("#FFA500"))
+    return self.VersionTag
 end
 
 function OrangeUI:cz(title)
