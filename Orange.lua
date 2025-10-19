@@ -1,4 +1,4 @@
--- 橙c美式UI库 v1.0 - 标签靠右显示
+-- 橙c美式UI库 v1.0 - 修复标签拖动问题
 local OrangeUI = {}
 
 function OrangeUI:Init(config)
@@ -47,7 +47,7 @@ function OrangeUI:createMainWindow(config)
     return self
 end
 
--- 定义标签位置（默认靠右显示）
+-- 定义标签位置（修复拖动问题）
 function OrangeUI:tag(position, title, color, radius)
     position = position or "right" -- 默认在右侧
     
@@ -60,49 +60,92 @@ function OrangeUI:tag(position, title, color, radius)
     -- 存储标签对象
     table.insert(self.Tags[position], tagObj)
     
-    -- 设置标签位置靠右
-    task.spawn(function()
-        local maxAttempts = 10
-        local attempt = 0
-        
-        local function setPosition()
-            attempt = attempt + 1
-            if attempt > maxAttempts then return end
-            
-            if tagObj and tagObj.Instance then
-                local frame = tagObj.Instance
-                -- 计算靠右位置（屏幕宽度 - 标签宽度 - 边距）
-                local screenWidth = game:GetService("CoreGui").AbsoluteSize.X
-                local tagWidth = frame.AbsoluteSize.X
-                local rightMargin = 10 -- 右边距
-                local xPosition = screenWidth - tagWidth - rightMargin
-                
-                frame.Position = UDim2.new(0, xPosition, 0, 10)
-            else
-                task.wait(0.1)
-                setPosition()
-            end
-        end
-        
-        setPosition()
-    end)
+    -- 立即添加拖动功能（修复版）
+    self:makeTagDraggable(tagObj)
     
     return tagObj
 end
 
--- 创建时间标签（靠右显示）
+-- 使标签可拖动（修复版）
+function OrangeUI:makeTagDraggable(tagObj)
+    task.spawn(function()
+        local maxAttempts = 20
+        local attempt = 0
+        
+        while attempt < maxAttempts do
+            attempt = attempt + 1
+            
+            if tagObj and tagObj.Instance and tagObj.Instance:FindFirstChildWhichIsA("TextButton") then
+                local frame = tagObj.Instance
+                local textButton = frame:FindFirstChildWhichIsA("TextButton")
+                
+                if textButton then
+                    local dragToggle = false
+                    local dragInput, dragStart, startPos
+                    
+                    -- 在TextButton上添加拖动事件
+                    textButton.InputBegan:Connect(function(input)
+                        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                            dragToggle = true
+                            dragStart = input.Position
+                            startPos = frame.Position
+                            
+                            -- 提高标签层级
+                            frame.ZIndex = 10
+                            
+                            input.Changed:Connect(function()
+                                if input.UserInputState == Enum.UserInputState.End then
+                                    dragToggle = false
+                                    frame.ZIndex = 1
+                                end
+                            end)
+                        end
+                    end)
+                    
+                    textButton.InputChanged:Connect(function(input)
+                        if input.UserInputType == Enum.UserInputType.MouseMovement then
+                            dragInput = input
+                        end
+                    end)
+                    
+                    game:GetService("UserInputService").InputChanged:Connect(function(input)
+                        if input == dragInput and dragToggle then
+                            local delta = input.Position - dragStart
+                            frame.Position = UDim2.new(
+                                startPos.X.Scale, 
+                                startPos.X.Offset + delta.X,
+                                startPos.Y.Scale, 
+                                startPos.Y.Offset + delta.Y
+                            )
+                        end
+                    end)
+                    
+                    break -- 成功添加拖动功能，退出循环
+                end
+            end
+            
+            task.wait(0.1) -- 等待标签完全创建
+        end
+    end)
+end
+
+-- 创建时间标签
 function OrangeUI:createTimeTag()
     self.TimeTag = self:tag("right", "00:00:00", Color3.fromHex("#FFA500"))
     
     -- 更新时间
     task.spawn(function()
-        while true do
+        while self.TimeTag do
             local now = os.date("*t")
             local hours = string.format("%02d", now.hour)
             local minutes = string.format("%02d", now.min)
             local seconds = string.format("%02d", now.sec)
             
-            self.TimeTag:SetTitle(hours .. ":" .. minutes .. ":" .. seconds)
+            if self.TimeTag and self.TimeTag.SetTitle then
+                pcall(function()
+                    self.TimeTag:SetTitle(hours .. ":" .. minutes .. ":" .. seconds)
+                end)
+            end
             task.wait(1)
         end
     end)
@@ -110,7 +153,7 @@ function OrangeUI:createTimeTag()
     return self.TimeTag
 end
 
--- 创建版本标签（靠右显示）
+-- 创建版本标签
 function OrangeUI:createVersionTag(version)
     self.VersionTag = self:tag("right", version or "v1.0", Color3.fromHex("#FFA500"))
     return self.VersionTag
