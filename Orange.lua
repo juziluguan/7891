@@ -1,4 +1,4 @@
--- 橙c美式UI库 v1.0 - 强制字体替换版
+-- 橙c美式UI库 - 专业布局版
 local OrangeUI = {}
 
 function OrangeUI:Init(config)
@@ -6,12 +6,8 @@ function OrangeUI:Init(config)
     
     self.WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"))()
     
-    -- 存储自定义字体设置
-    self.CustomFonts = config.Font or {
-        Title = Enum.Font.GothamBold,
-        Content = Enum.Font.Gotham,
-        Button = Enum.Font.GothamMedium
-    }
+    -- 存储配置
+    self.Config = config
     
     -- 显示欢迎弹窗
     self.WindUI:Popup({
@@ -37,7 +33,8 @@ end
 function OrangeUI:createMainWindow(config)
     self.Window = self.WindUI:CreateWindow({
         Title = config.Title or "橙c美式",
-        Size = config.Size or UDim2.fromOffset(400, 300),
+        Subtitle = config.Subtitle or "",  -- 副标题
+        Size = config.Size or UDim2.fromOffset(500, 450),  -- 增大窗口
         Folder = config.Folder or "橙c美式UI",
         Theme = config.Theme or "Dark",
         ToggleKey = config.ToggleKey or Enum.KeyCode.RightShift,
@@ -46,6 +43,9 @@ function OrangeUI:createMainWindow(config)
     
     -- 强制替换所有字体
     self:forceReplaceFonts()
+    
+    -- 创建左下角用户信息
+    self:createUserInfo()
     
     -- 标签容器
     self.Tags = {
@@ -57,45 +57,78 @@ function OrangeUI:createMainWindow(config)
     return self
 end
 
--- 强制替换所有字体（外部汉化方式）
+-- 创建左下角用户信息
+function OrangeUI:createUserInfo()
+    task.spawn(function()
+        task.wait(2) -- 等待窗口完全加载
+        
+        -- 获取玩家信息
+        local player = game:GetService("Players").LocalPlayer
+        local playerName = player.Name
+        local displayName = player.DisplayName
+        
+        -- 在左下角创建用户信息标签
+        self.UserInfoTag = self.Window:Tag({
+            Title = "用户: " .. (displayName ~= playerName and displayName or playerName),
+            Color = Color3.fromHex("#666666"),
+            Radius = 8
+        })
+        
+        -- 设置位置到左下角
+        if self.UserInfoTag and self.UserInfoTag.Instance then
+            task.wait(0.5)
+            local frame = self.UserInfoTag.Instance
+            frame.Position = UDim2.new(0, 10, 1, -35) -- 左下角位置
+        end
+    end)
+end
+
+-- 设置副标题
+function OrangeUI:setSubtitle(text)
+    if self.Window and self.Window.Instance then
+        -- 这里需要WindUI支持副标题设置
+        -- 如果没有直接支持，我们可以创建一个标签来模拟副标题
+        if not self.SubtitleTag then
+            self.SubtitleTag = self.Window:Tag({
+                Title = text,
+                Color = Color3.fromHex("#888888"),
+                Radius = 6
+            })
+            -- 设置位置在主标题下方
+            if self.SubtitleTag and self.SubtitleTag.Instance then
+                task.wait(0.5)
+                local frame = self.SubtitleTag.Instance
+                frame.Position = UDim2.new(0, 120, 0, 45)
+            end
+        else
+            self.SubtitleTag:SetTitle(text)
+        end
+    end
+end
+
+-- 强制替换所有字体
 function OrangeUI:forceReplaceFonts()
     if not self.Window then return end
     
-    -- 延迟执行，确保WindUI完全加载
     task.spawn(function()
         task.wait(1)
         
         local function replaceFontsRecursive(obj)
             for _, child in ipairs(obj:GetDescendants()) do
                 if child:IsA("TextLabel") or child:IsA("TextButton") or child:IsA("TextBox") then
-                    -- 根据元素特征判断字体类型
                     if child.TextSize >= 18 or string.find(string.lower(child.Name), "title") then
-                        -- 标题字体
-                        child.FontFace = self.CustomFonts.Title
+                        child.FontFace = Enum.Font.GothamBold
                     elseif child:IsA("TextButton") then
-                        -- 按钮字体
-                        child.FontFace = self.CustomFonts.Button
+                        child.FontFace = Enum.Font.GothamMedium
                     else
-                        -- 内容字体
-                        child.FontFace = self.CustomFonts.Content
+                        child.FontFace = Enum.Font.Gotham
                     end
                 end
             end
         end
         
-        -- 应用到整个WindUI实例
         if self.Window.Instance then
             replaceFontsRecursive(self.Window.Instance)
-        end
-        
-        -- 持续监控新创建的UI元素
-        while true do
-            task.wait(0.5)
-            if self.Window and self.Window.Instance then
-                replaceFontsRecursive(self.Window.Instance)
-            else
-                break
-            end
         end
     end)
 end
@@ -114,12 +147,12 @@ function OrangeUI:setTagPosition(tagObj, positionIndex)
                 local screenWidth = game:GetService("CoreGui").AbsoluteSize.X
                 local tagWidth = frame.AbsoluteSize.X
                 
-                -- 计算靠右位置
-                local rightMargin = 10
-                local spacing = 5
+                -- 计算靠右位置，离边缘更远
+                local rightMargin = 20  -- 增加右边距
+                local spacing = 8       -- 增加标签间距
                 local xPosition = screenWidth - tagWidth - rightMargin - (positionIndex * (tagWidth + spacing))
                 
-                frame.Position = UDim2.new(0, xPosition, 0, 10)
+                frame.Position = UDim2.new(0, xPosition, 0, 15)  -- 增加顶部间距
                 break
             end
             task.wait(0.1)
@@ -273,7 +306,7 @@ function OrangeUI:clearTags(position)
             for _, tag in ipairs(tags) do
                 pcall(function() tag:Destroy() end)
             end
-            self.Tags[pos] = {}
+            self.Tabs[pos] = {}
         end
     end
 end
@@ -283,14 +316,6 @@ function OrangeUI:arrangeRightTags()
     local rightTags = self:getTags("right")
     for i, tag in ipairs(rightTags) do
         self:setTagPosition(tag, i - 1)
-    end
-end
-
--- 字体设置函数
-function OrangeUI:setFont(fontType, font)
-    if self.CustomFonts[fontType] then
-        self.CustomFonts[fontType] = font
-        self:forceReplaceFonts()
     end
 end
 
