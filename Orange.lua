@@ -1,4 +1,4 @@
--- 橙c美式UI库 v1.0 - 支持自定义字体
+-- 橙c美式UI库 v1.0 - 强制字体替换版
 local OrangeUI = {}
 
 function OrangeUI:Init(config)
@@ -44,8 +44,8 @@ function OrangeUI:createMainWindow(config)
         Resizable = config.Resizable or false
     })
     
-    -- 应用自定义字体到窗口
-    self:applyCustomFonts()
+    -- 强制替换所有字体
+    self:forceReplaceFonts()
     
     -- 标签容器
     self.Tags = {
@@ -57,49 +57,79 @@ function OrangeUI:createMainWindow(config)
     return self
 end
 
--- 应用自定义字体
-function OrangeUI:applyCustomFonts()
+-- 强制替换所有字体（外部汉化方式）
+function OrangeUI:forceReplaceFonts()
     if not self.Window then return end
     
-    -- 递归遍历所有UI元素并应用字体
-    local function applyFontsToDescendants(obj)
-        for _, child in ipairs(obj:GetDescendants()) do
-            if child:IsA("TextLabel") or child:IsA("TextButton") or child:IsA("TextBox") then
-                -- 根据元素类型应用不同字体
-                if string.find(string.lower(child.Name), "title") then
-                    child.FontFace = self.CustomFonts.Title
-                elseif child:IsA("TextButton") then
-                    child.FontFace = self.CustomFonts.Button
-                else
-                    child.FontFace = self.CustomFonts.Content
+    -- 延迟执行，确保WindUI完全加载
+    task.spawn(function()
+        task.wait(1)
+        
+        local function replaceFontsRecursive(obj)
+            for _, child in ipairs(obj:GetDescendants()) do
+                if child:IsA("TextLabel") or child:IsA("TextButton") or child:IsA("TextBox") then
+                    -- 根据元素特征判断字体类型
+                    if child.TextSize >= 18 or string.find(string.lower(child.Name), "title") then
+                        -- 标题字体
+                        child.FontFace = self.CustomFonts.Title
+                    elseif child:IsA("TextButton") then
+                        -- 按钮字体
+                        child.FontFace = self.CustomFonts.Button
+                    else
+                        -- 内容字体
+                        child.FontFace = self.CustomFonts.Content
+                    end
                 end
             end
         end
-    end
-    
-    -- 应用到窗口
-    applyFontsToDescendants(self.Window.Instance)
+        
+        -- 应用到整个WindUI实例
+        if self.Window.Instance then
+            replaceFontsRecursive(self.Window.Instance)
+        end
+        
+        -- 持续监控新创建的UI元素
+        while true do
+            task.wait(0.5)
+            if self.Window and self.Window.Instance then
+                replaceFontsRecursive(self.Window.Instance)
+            else
+                break
+            end
+        end
+    end)
 end
 
--- 设置自定义字体
-function OrangeUI:setFont(fontType, font)
-    if self.CustomFonts[fontType] then
-        self.CustomFonts[fontType] = font
-        self:applyCustomFonts()
-    end
-end
-
--- 设置所有字体
-function OrangeUI:setAllFonts(fonts)
-    if fonts.Title then self.CustomFonts.Title = fonts.Title end
-    if fonts.Content then self.CustomFonts.Content = fonts.Content end
-    if fonts.Button then self.CustomFonts.Button = fonts.Button end
-    self:applyCustomFonts()
+-- 设置标签位置靠右
+function OrangeUI:setTagPosition(tagObj, positionIndex)
+    task.spawn(function()
+        local maxAttempts = 10
+        local attempt = 0
+        
+        while attempt < maxAttempts do
+            attempt = attempt + 1
+            
+            if tagObj and tagObj.Instance then
+                local frame = tagObj.Instance
+                local screenWidth = game:GetService("CoreGui").AbsoluteSize.X
+                local tagWidth = frame.AbsoluteSize.X
+                
+                -- 计算靠右位置
+                local rightMargin = 10
+                local spacing = 5
+                local xPosition = screenWidth - tagWidth - rightMargin - (positionIndex * (tagWidth + spacing))
+                
+                frame.Position = UDim2.new(0, xPosition, 0, 10)
+                break
+            end
+            task.wait(0.1)
+        end
+    end)
 end
 
 -- 定义标签位置
 function OrangeUI:tag(position, title, color, radius)
-    position = position or "right" -- 默认在右侧
+    position = position or "right"
     
     local tagObj = self.Window:Tag({
         Title = title,
@@ -107,8 +137,11 @@ function OrangeUI:tag(position, title, color, radius)
         Radius = radius or 999
     })
     
-    -- 存储标签对象
     table.insert(self.Tags[position], tagObj)
+    
+    -- 设置标签位置靠右
+    local positionIndex = #self.Tags[position] - 1
+    self:setTagPosition(tagObj, positionIndex)
     
     -- 添加拖动功能
     self:makeTagDraggableWithSmallArea(tagObj)
@@ -116,7 +149,7 @@ function OrangeUI:tag(position, title, color, radius)
     return tagObj
 end
 
--- 使标签可拖动（缩小移动区域版本）
+-- 使标签可拖动
 function OrangeUI:makeTagDraggableWithSmallArea(tagObj)
     task.spawn(function()
         local maxAttempts = 20
@@ -128,7 +161,6 @@ function OrangeUI:makeTagDraggableWithSmallArea(tagObj)
             if tagObj and tagObj.Instance then
                 local frame = tagObj.Instance
                 
-                -- 创建一个小的拖动区域
                 local dragArea = Instance.new("TextButton")
                 dragArea.Name = "DragArea"
                 dragArea.Size = UDim2.new(0, 20, 0, 20)
@@ -183,7 +215,6 @@ function OrangeUI:makeTagDraggableWithSmallArea(tagObj)
                 
                 break
             end
-            
             task.wait(0.1)
         end
     end)
@@ -244,6 +275,22 @@ function OrangeUI:clearTags(position)
             end
             self.Tags[pos] = {}
         end
+    end
+end
+
+-- 重新排列右侧标签
+function OrangeUI:arrangeRightTags()
+    local rightTags = self:getTags("right")
+    for i, tag in ipairs(rightTags) do
+        self:setTagPosition(tag, i - 1)
+    end
+end
+
+-- 字体设置函数
+function OrangeUI:setFont(fontType, font)
+    if self.CustomFonts[fontType] then
+        self.CustomFonts[fontType] = font
+        self:forceReplaceFonts()
     end
 end
 
