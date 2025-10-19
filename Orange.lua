@@ -1,315 +1,88 @@
--- 橙c美式UI库 - 内置橙色描边版
-local OrangeUI = {}
+-- 橙C美式UI - 简化版
+local OrangeUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/juziluguan/7891/main/Orange.lua"))()
 
-function OrangeUI:Init(config)
-    config = config or {}
-    
-    self.WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"))()
-    
-    -- 存储配置
-    self.Config = config
-    
-    -- 显示欢迎弹窗
-    self.WindUI:Popup({
-        Title = "欢迎使用橙C美式",
-        Icon = "sparkles",
-        Content = "我的一个半缝合脚本",
-        Buttons = {
-            {
-                Title = "进入脚本",
-                Icon = "arrow-right",
-                Variant = "Primary",
-                Callback = function() 
-                    print("进入脚本")
-                    self:createMainWindow(config)
-                end
-            }
-        }
-    })
-    
-    return self
-end
+local ui = OrangeUI:Init({
+    Title = "橙C美式 1.0"
+})
 
-function OrangeUI:createMainWindow(config)
-    local Players = game:GetService("Players")
-    local LocalPlayer = Players.LocalPlayer
+-- 等待窗口创建完成
+task.wait(2)
 
-    self.Window = self.WindUI:CreateWindow({
-        Title = config.Title or "橙C美式 1.0",
-        IconTransparency = 0.5,
-        IconThemed = true,
-        Author = "作者: 橙子",
-        Folder = "橙C美式",
-        Size = UDim2.fromOffset(400, 300),
-        Transparent = false,
-        Theme = "Dark",
-        BackgroundColor = Color3.fromRGB(25, 25, 35),
-        User = {
-            Enabled = true,
-            Callback = function() print("点击了用户信息") end,
-            Anonymous = false
-        },
-        SideBarWidth = 200,
-        ScrollBarEnabled = true,
-    })
+-- 为标签页添加橙黑渐变效果
+task.spawn(function()
+    task.wait(1)
     
-    -- 在窗口创建后立即添加橙色描边
-    self:addOrangeStroke()
-    
-    -- 创建时间标签
-    self.TimeTag = self.Window:Tag({
-        Title = "00:00:00",
-        Color = Color3.fromHex("#FFA500")
-    })
-    
-    -- 创建版本标签
-    self.VersionTag = self.Window:Tag({
-        Title = "v1.0",
-        Color = Color3.fromHex("#FFA500")
-    })
-    
-    -- 更新时间
-    task.spawn(function()
-        while true do
-            local now = os.date("*t")
-            local hours = string.format("%02d", now.hour)
-            local minutes = string.format("%02d", now.min)
-            local seconds = string.format("%02d", now.sec)
-            
-            self.TimeTag:SetTitle(hours .. ":" .. minutes .. ":" .. seconds)
-            task.wait(1)
-        end
-    end)
-
-    -- 橙黑渐变打开按钮
-    self.Window:EditOpenButton({
-        Title = "橙C美式",
-        Icon = "crown",
-        CornerRadius = UDim.new(0,16),
-        StrokeThickness = 2,
-        Color = ColorSequence.new(
-            Color3.fromHex("FF6B00"),  -- 橙色
-            Color3.fromHex("000000")   -- 黑色
-        ),
-        Draggable = true,
-    })
-    
-    -- 标签容器
-    self.Tags = {
-        left = {},
-        right = {}
-    }
-    
-    self.Tabs = {}
-    return self
-end
-
--- 添加橙色描边到UI
-function OrangeUI:addOrangeStroke()
-    task.spawn(function()
-        -- 等待窗口完全加载
-        task.wait(0.5)
-        
-        if self.Window and self.Window.Instance then
-            local mainFrame = self.Window.Instance
-            
-            -- 给主窗口添加橙色描边
-            local mainStroke = Instance.new("UIStroke")
-            mainStroke.Color = Color3.fromRGB(255, 107, 0)  -- 橙色
-            mainStroke.Thickness = 3
-            mainStroke.Transparency = 0
-            mainStroke.LineJoinMode = Enum.LineJoinMode.Round
-            mainStroke.Parent = mainFrame
-            
-            print("✅ 主窗口橙色描边已添加")
-            
-            -- 给所有标签添加描边
-            task.wait(1)
-            self:addStrokeToAllTags()
-            
-            -- 给侧边栏添加描边
-            self:addStrokeToSidebar()
-        end
-    end)
-end
-
--- 给所有标签添加描边
-function OrangeUI:addStrokeToAllTags()
-    if not self.Window then return end
-    
-    task.spawn(function()
-        task.wait(1)
-        
-        local function addTagStrokes(obj)
+    if ui.Window and ui.Window.Instance then
+        -- 查找所有标签页文本
+        local function findTabLabels(obj)
+            local tabLabels = {}
             for _, child in ipairs(obj:GetDescendants()) do
-                if child:IsA("Frame") then
-                    -- 判断是否是标签（有圆角和文本）
-                    if child:FindFirstChildWhichIsA("UICorner") and child:FindFirstChildWhichIsA("TextLabel") then
-                        if not child:FindFirstChild("OrangeStroke") then
-                            local stroke = Instance.new("UIStroke")
-                            stroke.Name = "OrangeStroke"
-                            stroke.Color = Color3.fromRGB(255, 107, 0)
-                            stroke.Thickness = 1.5
-                            stroke.Transparency = 0
-                            stroke.LineJoinMode = Enum.LineJoinMode.Round
-                            stroke.Parent = child
+                if child:IsA("TextLabel") or child:IsA("TextButton") then
+                    -- 只查找"主页"和"设置"标签
+                    local tabNames = {"主页", "设置"}
+                    for _, name in ipairs(tabNames) do
+                        if child.Text and string.find(child.Text, name) then
+                            table.insert(tabLabels, child)
+                            break
                         end
                     end
                 end
             end
+            return tabLabels
         end
         
-        if self.Window.Instance then
-            addTagStrokes(self.Window.Instance)
-        end
-    end)
-end
-
--- 给侧边栏添加描边
-function OrangeUI:addStrokeToSidebar()
-    if not self.Window then return end
-    
-    task.spawn(function()
-        task.wait(1)
+        local tabLabels = findTabLabels(ui.Window.Instance)
         
-        local function findSidebar(obj)
-            for _, child in ipairs(obj:GetDescendants()) do
-                if child:IsA("Frame") and (child.Name == "SideBar" or child.Name == "TabHolder" or child.Size.X.Scale == 0) then
-                    return child
-                end
-            end
-            return nil
-        end
-        
-        if self.Window.Instance then
-            local sidebar = findSidebar(self.Window.Instance)
-            if sidebar and not sidebar:FindFirstChild("OrangeStroke") then
-                local stroke = Instance.new("UIStroke")
-                stroke.Name = "OrangeStroke"
-                stroke.Color = Color3.fromRGB(255, 107, 0)
-                stroke.Thickness = 2
-                stroke.Transparency = 0
-                stroke.LineJoinMode = Enum.LineJoinMode.Round
-                stroke.Parent = sidebar
-                print("✅ 侧边栏橙色描边已添加")
-            end
-        end
-    end)
-end
-
--- 创建标签（自动添加描边）
-function OrangeUI:tag(position, title, color)
-    position = position or "right"
-    
-    local tagObj = self.Window:Tag({
-        Title = title,
-        Color = color or Color3.fromHex("#FFA500")
-    })
-    
-    table.insert(self.Tags[position], tagObj)
-    
-    -- 为新标签添加描边
-    task.spawn(function()
-        task.wait(0.5)
-        if tagObj and tagObj.Instance then
+        for _, label in ipairs(tabLabels) do
+            -- 为每个标签页文本添加橙黑渐变
+            local gradient = Instance.new("UIGradient")
+            gradient.Color = ColorSequence.new({
+                ColorSequenceKeypoint.new(0, Color3.fromHex("FF6B00")),  -- 橙色
+                ColorSequenceKeypoint.new(0.5, Color3.fromHex("FF8C00")), -- 亮橙色
+                ColorSequenceKeypoint.new(1, Color3.fromHex("000000"))   -- 黑色
+            })
+            gradient.Rotation = 90
+            gradient.Parent = label
+            
+            -- 添加文字描边
             local stroke = Instance.new("UIStroke")
-            stroke.Color = Color3.fromRGB(255, 107, 0)
-            stroke.Thickness = 1.5
-            stroke.Transparency = 0
-            stroke.LineJoinMode = Enum.LineJoinMode.Round
-            stroke.Parent = tagObj.Instance
-        end
-    end)
-    
-    return tagObj
-end
-
--- 其他函数保持不变...
-function OrangeUI:createTimeTag()
-    return self.TimeTag
-end
-
-function OrangeUI:createVersionTag(version)
-    if version and self.VersionTag then
-        self.VersionTag:SetTitle(version)
-    end
-    return self.VersionTag
-end
-
-function OrangeUI:clearTags(position)
-    if position then
-        for _, tag in ipairs(self.Tags[position] or {}) do
-            pcall(function() tag:Destroy() end)
-        end
-        self.Tags[position] = {}
-    else
-        for pos, tags in pairs(self.Tags) do
-            for _, tag in ipairs(tags) do
-                pcall(function() tag:Destroy() end)
-            end
-            self.Tags[pos] = {}
+            stroke.Color = Color3.fromHex("FF6B00")
+            stroke.Thickness = 1
+            stroke.Transparency = 0.3
+            stroke.Parent = label
         end
     end
-end
+end)
 
-function OrangeUI:cz(title, icon, locked)
-    local tab = self.Window:Tab({
-        Title = title or "主页",
-        Icon = icon or "user",
-        Locked = locked or false
-    })
-    self.Tabs[title] = tab
-    return tab
-end
+-- 主页
+local MainTab = ui:cz("主页", "user")
 
-function OrangeUI:settings(title)
-    local tab = self.Window:Tab({
-        Title = title or "设置",
-        Icon = "settings",
-        Locked = false
-    })
-    self.Tabs[title] = tab
-    return tab
-end
+MainTab:Paragraph({
+    Title = "欢迎使用橙C美式",
+    Desc = "感谢您的使用！",
+})
 
-function OrangeUI:btn(tab, title, desc, callback)
-    tab:Button({
-        Title = title,
-        Desc = desc,
-        Callback = callback
-    })
-end
+-- 输入框：自定义标签
+ui:input(MainTab, "自定义标签", "输入要显示的标签文字", "例如: 管理员", function(text)
+    if text and text ~= "" then
+        ui:tag("right", text, Color3.fromHex("#FF6B35"))
+        ui:notify("标签更新", "标签已显示: " .. text, "tag")
+    end
+end)
 
-function OrangeUI:input(tab, title, desc, placeholder, callback)
-    tab:Input({
-        Title = title,
-        Desc = desc,
-        Placeholder = placeholder or "请输入...",
-        Callback = callback
-    })
-end
+-- 添加初始标签
+ui:tag("right", "已加载", Color3.fromHex("#4ECDC4"))
+ui:tag("right", "稳定版", Color3.fromHex("#96CEB4"))
 
-function OrangeUI:dropdown(tab, title, desc, options, default, callback)
-    tab:Dropdown({
-        Title = title,
-        Desc = desc,
-        Values = options or {},
-        Value = default,
-        Callback = callback
-    })
-end
+-- 设置页面
+local SettingsTab = ui:settings("设置")
 
-function OrangeUI:notify(title, content, icon)
-    self.WindUI:Notify({
-        Title = title,
-        Content = content,
-        Icon = icon or "info"
-    })
-end
+ui:dropdown(SettingsTab, "选择主题", "切换UI主题颜色", 
+    {"Dark", "Light"}, 
+    "Dark", 
+    function(theme)
+        ui:setTheme(theme)
+    end
+)
 
-function OrangeUI:setTheme(theme)
-    self.WindUI:SetTheme(theme)
-    self:notify("主题切换", "已切换到 " .. theme .. " 主题", "palette")
-end
-
-return OrangeUI
+ui:notify("橙C美式", "脚本加载完成", "check-circle")
