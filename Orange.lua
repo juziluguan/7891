@@ -1,4 +1,4 @@
--- 橙c美式UI库 - 橙黑渐变版
+-- 橙c美式UI库 - 标题渐变版
 local OrangeUI = {}
 
 function OrangeUI:Init(config)
@@ -91,6 +91,9 @@ function OrangeUI:createMainWindow(config)
         Draggable = true,
     })
     
+    -- 为窗口标题添加橙黑渐变效果
+    self:applyTitleGradient()
+    
     -- 标签容器
     self.Tags = {
         left = {},
@@ -99,6 +102,45 @@ function OrangeUI:createMainWindow(config)
     
     self.Tabs = {}
     return self
+end
+
+-- 为窗口标题应用橙黑渐变效果
+function OrangeUI:applyTitleGradient()
+    task.spawn(function()
+        task.wait(1) -- 等待窗口完全加载
+        
+        if self.Window and self.Window.Instance then
+            -- 查找标题文本标签
+            local function findTitleLabel(obj)
+                for _, child in ipairs(obj:GetDescendants()) do
+                    if child:IsA("TextLabel") and (child.Text == "橙C美式 1.0" or string.find(child.Text, "橙C美式")) then
+                        return child
+                    end
+                end
+                return nil
+            end
+            
+            local titleLabel = findTitleLabel(self.Window.Instance)
+            if titleLabel then
+                -- 创建橙黑渐变文本效果
+                local gradient = Instance.new("UIGradient")
+                gradient.Color = ColorSequence.new({
+                    ColorSequenceKeypoint.new(0, Color3.fromHex("FF6B00")),  -- 橙色
+                    ColorSequenceKeypoint.new(0.5, Color3.fromHex("FF8C00")), -- 亮橙色
+                    ColorSequenceKeypoint.new(1, Color3.fromHex("000000"))   -- 黑色
+                })
+                gradient.Rotation = -90
+                gradient.Parent = titleLabel
+                
+                -- 添加文字阴影效果
+                local textShadow = Instance.new("TextStroke")
+                textShadow.Color = Color3.fromHex("000000")
+                textShadow.Thickness = 1
+                textShadow.Transparency = 0.3
+                textShadow.Parent = titleLabel
+            end
+        end
+    end)
 end
 
 -- 创建标签
