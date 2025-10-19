@@ -1,204 +1,158 @@
--- 橙c美式UI库 - 仿WindUI结构版
-local OrangeUI = {}
+-- 橙C美式UI - 基于你的WindUI脚本重写
+local OrangeUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/juziluguan/7891/main/Orange.lua"))()
 
-function OrangeUI:Init(config)
-    config = config or {}
-    
-    self.WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"))()
-    
-    -- 显示欢迎弹窗
-    self.WindUI:Popup({
-        Title = "欢迎使用橙C美式",
-        Icon = "sparkles",
-        Content = "我的一个半缝合脚本",
-        Buttons = {
-            {
-                Title = "进入脚本",
-                Icon = "arrow-right",
-                Variant = "Primary",
-                Callback = function() 
-                    print("进入脚本")
-                    self:createMainWindow(config)
-                end
-            }
-        }
-    })
-    
-    return self
+local ui = OrangeUI:Init({
+    Title = "橙C美式 2.0",
+    Size = UDim2.fromOffset(580, 440),
+    Theme = "Dark"
+})
+
+-- 其他代码保持不变...
+local HttpService = game:GetService("HttpService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Plr = game:GetService("Players")
+local LP = Plr.LocalPlayer
+
+local Part = Instance.new("Part", workspace)
+Part.Material = Enum.Material.ForceField
+Part.Anchored = true
+Part.CanCollide = false
+Part.CastShadow = false
+Part.Shape = Enum.PartType.Ball
+Part.Color = Color3.fromRGB(132, 0, 255)
+Part.Transparency = 0.5
+
+local BaseGui = Instance.new("ScreenGui", game.CoreGui)
+BaseGui.Name = "BaseGui"
+
+local TL = Instance.new("TextLabel", BaseGui)
+TL.Name = "TL"
+TL.Parent = BaseGui
+TL.BackgroundColor3 = Color3.new(1, 1, 1)
+TL.BackgroundTransparency = 1
+TL.BorderColor3 = Color3.new(0, 0, 0)
+TL.Position = UDim2.new(0.95, -300, 0.85, 0)
+TL.Size = UDim2.new(0, 300, 0, 50)
+TL.FontFace = Font.new("rbxassetid://12187370000", Enum.FontWeight.Bold)
+TL.Text = ""
+TL.TextColor3 = Color3.new(1, 1, 1)
+TL.TextScaled = true
+TL.TextSize = 14
+TL.TextWrapped = true
+TL.Visible = true
+TL.RichText = true
+
+local function rainbowColor(hue)
+  return Color3.fromHSV(hue, 1, 1)
 end
 
-function OrangeUI:createMainWindow(config)
-    local Players = game:GetService("Players")
-    local LocalPlayer = Players.LocalPlayer
+local function updateRainbowText(distance, ballSpeed, spamRadius, minDistance)
+  local hue = (tick() * 0.1) % 1
+  local color1 = rainbowColor(hue)
+  local color2 = rainbowColor((hue + 0.3) % 1)
+  local color3 = rainbowColor((hue + 0.6) % 1)
+  local color4 = rainbowColor((hue + 0.9) % 1)
 
-    self.Window = self.WindUI:CreateWindow({
-        Title = config.Title or "橙C美式 1.0",
-        IconTransparency = 0.5,
-        IconThemed = true,
-        Author = "作者: 橙子",
-        Folder = "橙C美式",
-        Size = UDim2.fromOffset(400, 300),
-        Transparent = false,
-        Theme = "Dark",
-        BackgroundColor = Color3.fromRGB(25, 25, 35),
-        User = {
-            Enabled = true,
-            Callback = function() print("点击了用户信息") end,
-            Anonymous = false
-        },
-        SideBarWidth = 200,
-        ScrollBarEnabled = true,
-    })
-    
-    -- 时间标签
-    self.TimeTag = self.Window:Tag({
-        Title = "00:00:00",
-        Color = Color3.fromHex("#FFA500")
-    })
-    
-    -- 版本标签
-    self.VersionTag = self.Window:Tag({
-        Title = "v1.0",
-        Color = Color3.fromHex("#FFA500")
-    })
-    
-    -- 更新时间
-    task.spawn(function()
-        while true do
-            local now = os.date("*t")
-            local hours = string.format("%02d", now.hour)
-            local minutes = string.format("%02d", now.min)
-            local seconds = string.format("%02d", now.sec)
-            
-            self.TimeTag:SetTitle(hours .. ":" .. minutes .. ":" .. seconds)
-            task.wait(1)
-        end
-    end)
+  TL.Text = string.format(
+  "<font color='#%s'>distance: %s</font>\n"..
+  "<font color='#%s'>ballSpeed: %s</font>\n"..
+  "<font color='#%s'>spamRadius: %s</font>\n"..
+  "<font color='#%s'>minDistance: %s</font>",
+  color1:ToHex(), tostring(distance),
+  color2:ToHex(), tostring(ballSpeed),
+  color3:ToHex(), tostring(spamRadius),
+  color4:ToHex(), tostring(minDistance)
+  )
+end
 
-    -- 橙黑渐变打开按钮
-    self.Window:EditOpenButton({
-        Title = "橙C美式脚本中心",
-        Icon = "crown",
-        CornerRadius = UDim.new(0,16),
-        StrokeThickness = 2,
-        Color = ColorSequence.new(
-            Color3.fromHex("FF6B00"),
-            Color3.fromHex("FFA500")
-        ),
-        Draggable = true,
-    })
-    
-    -- 标签容器
-    self.Tags = {
-        left = {},
-        right = {}
+-- 创建标签页 - 使用橙C美式UI的写法
+local MainTab = ui:cz("稳定功能", "shield")
+local FunTab = ui:cz("娱乐功能", "zap")
+
+-- 稳定功能页的按钮
+ui:btn(MainTab, "当前玩家基地: " .. LP.Team.Name, "显示当前基地", function()
+    -- 空功能
+end)
+
+-- 传送基地下拉选择
+local bases = {"Alpha", "Bravo", "Charlie", "Delta", "Echo", "Foxtrot", "Golf", "Hotel", "Juliet", "Kilo", "Lima", "Omega", "Romeo", "Sierra", "Tango", "Victor", "Yankee", "Zulu"}
+ui:dropdown(MainTab, "传送基地", "选择要传送的基地", bases, "Alpha", function(selected)
+    local Positions = {
+        ["Alpha"] = CFrame.new(-1197, 65, -4790),
+        ["Bravo"] = CFrame.new(-220, 65, -4919),
+        -- ... 其他位置
     }
-    
-    self.Tabs = {}
-    return self
-end
-
--- 创建标签
-function OrangeUI:tag(position, title, color)
-    position = position or "right"
-    
-    local tagObj = self.Window:Tag({
-        Title = title,
-        Color = color or Color3.fromHex("#FFA500")
-    })
-    
-    table.insert(self.Tags[position], tagObj)
-    return tagObj
-end
-
--- 创建时间标签
-function OrangeUI:createTimeTag()
-    return self.TimeTag
-end
-
--- 创建版本标签
-function OrangeUI:createVersionTag(version)
-    if version and self.VersionTag then
-        self.VersionTag:SetTitle(version)
+    if LP.Character and LP.Character:FindFirstChild("HumanoidRootPart") then
+        LP.Character:FindFirstChild("HumanoidRootPart").CFrame = Positions[selected]
     end
-    return self.VersionTag
-end
+end)
 
--- 清除标签
-function OrangeUI:clearTags(position)
-    if position then
-        for _, tag in ipairs(self.Tags[position] or {}) do
-            pcall(function() tag:Destroy() end)
-        end
-        self.Tags[position] = {}
-    else
-        for pos, tags in pairs(self.Tags) do
-            for _, tag in ipairs(tags) do
-                pcall(function() tag:Destroy() end)
+-- 自动功能
+ui:toggle(MainTab, "自动箱子", "自动收集箱子", false, function(value)
+    getgenv().auto = value
+end)
+
+ui:toggle(MainTab, "自动升级", "自动升级基地", false, function(value)
+    getgenv().autoTeleport = value
+end)
+
+-- 透视功能
+ui:toggle(MainTab, "透视开启", "开启玩家透视", false, function(value)
+    getgenv().ESPEnabled = value
+end)
+
+ui:toggle(MainTab, "模型透视", "显示骨骼透视", false, function(value)
+    getgenv().ShowSkeleton = value
+end)
+
+-- 娱乐功能页
+ui:btn(FunTab, "获取RPG", "快速获取RPG武器", function()
+    -- 获取RPG的代码
+end)
+
+ui:toggle(FunTab, "RPG轰炸", "自动RPG攻击", false, function(value)
+    -- RPG轰炸代码
+end)
+
+ui:toggle(FunTab, "护盾攻击", "攻击基地护盾", false, function(value)
+    -- 护盾攻击代码
+end)
+
+-- 添加橙黑渐变流动效果
+task.spawn(function()
+    task.wait(2)
+    
+    if ui.Window and ui.Window.Instance then
+        local mainFrame = ui.Window.Instance
+        
+        -- 主窗口橙黑流动描边
+        local windowStroke = Instance.new("UIStroke")
+        windowStroke.Thickness = 3
+        windowStroke.Transparency = 0
+        
+        local orangeBlackGradient = Instance.new("UIGradient")
+        orangeBlackGradient.Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, Color3.fromHex("FF6B00")),
+            ColorSequenceKeypoint.new(0.3, Color3.fromHex("000000")),
+            ColorSequenceKeypoint.new(0.7, Color3.fromHex("FF8C00")),
+            ColorSequenceKeypoint.new(1, Color3.fromHex("000000"))
+        })
+        orangeBlackGradient.Parent = windowStroke
+        windowStroke.Parent = mainFrame
+        
+        -- 流动效果
+        task.spawn(function()
+            local offset = 0
+            while true do
+                offset = (offset + 0.015) % 1
+                orangeBlackGradient.Offset = Vector2.new(offset, 0)
+                task.wait(0.06)
             end
-            self.Tags[pos] = {}
-        end
+        end)
+        
+        print("✅ 橙C美式UI加载完成！橙黑流动效果已应用")
     end
-end
+end)
 
--- 创建标签页
-function OrangeUI:cz(title, icon, locked)
-    local tab = self.Window:Tab({
-        Title = title or "主页",
-        Icon = icon or "user",
-        Locked = locked or false
-    })
-    self.Tabs[title] = tab
-    return tab
-end
-
-function OrangeUI:settings(title)
-    local tab = self.Window:Tab({
-        Title = title or "设置",
-        Icon = "settings",
-        Locked = false
-    })
-    self.Tabs[title] = tab
-    return tab
-end
-
--- 控件函数
-function OrangeUI:btn(tab, title, desc, callback)
-    tab:Button({
-        Title = title,
-        Desc = desc,
-        Callback = callback
-    })
-end
-
-function OrangeUI:input(tab, title, desc, placeholder, callback)
-    tab:Input({
-        Title = title,
-        Desc = desc,
-        Placeholder = placeholder or "请输入...",
-        Callback = callback
-    })
-end
-
-function OrangeUI:paragraph(tab, title, desc)
-    tab:Paragraph({
-        Title = title,
-        Desc = desc
-    })
-end
-
--- 通知
-function OrangeUI:notify(title, content, icon)
-    self.WindUI:Notify({
-        Title = title,
-        Content = content,
-        Icon = icon or "info"
-    })
-end
-
-function OrangeUI:setTheme(theme)
-    self.WindUI:SetTheme(theme)
-    self:notify("主题切换", "已切换到 " .. theme .. " 主题", "palette")
-end
-
-return OrangeUI
+-- 显示欢迎消息
+ui:notify("橙C美式", "脚本加载完成！", "star")
