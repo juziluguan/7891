@@ -1,10 +1,17 @@
--- 橙c美式UI库 v1.0 - 缩小标签移动区域
+-- 橙c美式UI库 v1.0 - 支持自定义字体
 local OrangeUI = {}
 
 function OrangeUI:Init(config)
     config = config or {}
     
     self.WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"))()
+    
+    -- 存储自定义字体设置
+    self.CustomFonts = config.Font or {
+        Title = Enum.Font.GothamBold,
+        Content = Enum.Font.Gotham,
+        Button = Enum.Font.GothamMedium
+    }
     
     -- 显示欢迎弹窗
     self.WindUI:Popup({
@@ -37,6 +44,9 @@ function OrangeUI:createMainWindow(config)
         Resizable = config.Resizable or false
     })
     
+    -- 应用自定义字体到窗口
+    self:applyCustomFonts()
+    
     -- 标签容器
     self.Tags = {
         left = {},
@@ -47,7 +57,47 @@ function OrangeUI:createMainWindow(config)
     return self
 end
 
--- 定义标签位置（缩小移动区域）
+-- 应用自定义字体
+function OrangeUI:applyCustomFonts()
+    if not self.Window then return end
+    
+    -- 递归遍历所有UI元素并应用字体
+    local function applyFontsToDescendants(obj)
+        for _, child in ipairs(obj:GetDescendants()) do
+            if child:IsA("TextLabel") or child:IsA("TextButton") or child:IsA("TextBox") then
+                -- 根据元素类型应用不同字体
+                if string.find(string.lower(child.Name), "title") then
+                    child.FontFace = self.CustomFonts.Title
+                elseif child:IsA("TextButton") then
+                    child.FontFace = self.CustomFonts.Button
+                else
+                    child.FontFace = self.CustomFonts.Content
+                end
+            end
+        end
+    end
+    
+    -- 应用到窗口
+    applyFontsToDescendants(self.Window.Instance)
+end
+
+-- 设置自定义字体
+function OrangeUI:setFont(fontType, font)
+    if self.CustomFonts[fontType] then
+        self.CustomFonts[fontType] = font
+        self:applyCustomFonts()
+    end
+end
+
+-- 设置所有字体
+function OrangeUI:setAllFonts(fonts)
+    if fonts.Title then self.CustomFonts.Title = fonts.Title end
+    if fonts.Content then self.CustomFonts.Content = fonts.Content end
+    if fonts.Button then self.CustomFonts.Button = fonts.Button end
+    self:applyCustomFonts()
+end
+
+-- 定义标签位置
 function OrangeUI:tag(position, title, color, radius)
     position = position or "right" -- 默认在右侧
     
@@ -60,7 +110,7 @@ function OrangeUI:tag(position, title, color, radius)
     -- 存储标签对象
     table.insert(self.Tags[position], tagObj)
     
-    -- 添加拖动功能（缩小移动区域）
+    -- 添加拖动功能
     self:makeTagDraggableWithSmallArea(tagObj)
     
     return tagObj
@@ -78,14 +128,14 @@ function OrangeUI:makeTagDraggableWithSmallArea(tagObj)
             if tagObj and tagObj.Instance then
                 local frame = tagObj.Instance
                 
-                -- 创建一个小的拖动区域（只在标签的右上角）
+                -- 创建一个小的拖动区域
                 local dragArea = Instance.new("TextButton")
                 dragArea.Name = "DragArea"
-                dragArea.Size = UDim2.new(0, 20, 0, 20) -- 20x20像素的拖动区域
-                dragArea.Position = UDim2.new(1, -25, 0, 5) -- 右上角位置
+                dragArea.Size = UDim2.new(0, 20, 0, 20)
+                dragArea.Position = UDim2.new(1, -25, 0, 5)
                 dragArea.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-                dragArea.BackgroundTransparency = 0.8 -- 半透明
-                dragArea.Text = "⤢" -- 拖动图标
+                dragArea.BackgroundTransparency = 0.8
+                dragArea.Text = "⤢"
                 dragArea.TextColor3 = Color3.fromRGB(0, 0, 0)
                 dragArea.TextSize = 12
                 dragArea.BorderSizePixel = 0
@@ -95,14 +145,11 @@ function OrangeUI:makeTagDraggableWithSmallArea(tagObj)
                 local dragToggle = false
                 local dragInput, dragStart, startPos
                 
-                -- 在拖动区域上添加拖动事件
                 dragArea.InputBegan:Connect(function(input)
                     if input.UserInputType == Enum.UserInputType.MouseButton1 then
                         dragToggle = true
                         dragStart = input.Position
                         startPos = frame.Position
-                        
-                        -- 提高标签层级
                         frame.ZIndex = 10
                         dragArea.ZIndex = 11
                         
@@ -134,10 +181,10 @@ function OrangeUI:makeTagDraggableWithSmallArea(tagObj)
                     end
                 end)
                 
-                break -- 成功添加拖动功能，退出循环
+                break
             end
             
-            task.wait(0.1) -- 等待标签完全创建
+            task.wait(0.1)
         end
     end)
 end
@@ -146,7 +193,6 @@ end
 function OrangeUI:createTimeTag()
     self.TimeTag = self:tag("right", "00:00:00", Color3.fromHex("#FFA500"))
     
-    -- 更新时间
     task.spawn(function()
         while self.TimeTag do
             local now = os.date("*t")
@@ -192,7 +238,6 @@ function OrangeUI:clearTags(position)
         end
         self.Tags[position] = {}
     else
-        -- 清除所有标签
         for pos, tags in pairs(self.Tags) do
             for _, tag in ipairs(tags) do
                 pcall(function() tag:Destroy() end)
