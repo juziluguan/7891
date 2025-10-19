@@ -1,4 +1,4 @@
--- 橙c美式UI库 v1.0 - 修复标签拖动问题
+-- 橙c美式UI库 v1.0 - 缩小标签移动区域
 local OrangeUI = {}
 
 function OrangeUI:Init(config)
@@ -47,7 +47,7 @@ function OrangeUI:createMainWindow(config)
     return self
 end
 
--- 定义标签位置（修复拖动问题）
+-- 定义标签位置（缩小移动区域）
 function OrangeUI:tag(position, title, color, radius)
     position = position or "right" -- 默认在右侧
     
@@ -60,14 +60,14 @@ function OrangeUI:tag(position, title, color, radius)
     -- 存储标签对象
     table.insert(self.Tags[position], tagObj)
     
-    -- 立即添加拖动功能（修复版）
-    self:makeTagDraggable(tagObj)
+    -- 添加拖动功能（缩小移动区域）
+    self:makeTagDraggableWithSmallArea(tagObj)
     
     return tagObj
 end
 
--- 使标签可拖动（修复版）
-function OrangeUI:makeTagDraggable(tagObj)
+-- 使标签可拖动（缩小移动区域版本）
+function OrangeUI:makeTagDraggableWithSmallArea(tagObj)
     task.spawn(function()
         local maxAttempts = 20
         local attempt = 0
@@ -75,53 +75,66 @@ function OrangeUI:makeTagDraggable(tagObj)
         while attempt < maxAttempts do
             attempt = attempt + 1
             
-            if tagObj and tagObj.Instance and tagObj.Instance:FindFirstChildWhichIsA("TextButton") then
+            if tagObj and tagObj.Instance then
                 local frame = tagObj.Instance
-                local textButton = frame:FindFirstChildWhichIsA("TextButton")
                 
-                if textButton then
-                    local dragToggle = false
-                    local dragInput, dragStart, startPos
-                    
-                    -- 在TextButton上添加拖动事件
-                    textButton.InputBegan:Connect(function(input)
-                        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-                            dragToggle = true
-                            dragStart = input.Position
-                            startPos = frame.Position
-                            
-                            -- 提高标签层级
-                            frame.ZIndex = 10
-                            
-                            input.Changed:Connect(function()
-                                if input.UserInputState == Enum.UserInputState.End then
-                                    dragToggle = false
-                                    frame.ZIndex = 1
-                                end
-                            end)
-                        end
-                    end)
-                    
-                    textButton.InputChanged:Connect(function(input)
-                        if input.UserInputType == Enum.UserInputType.MouseMovement then
-                            dragInput = input
-                        end
-                    end)
-                    
-                    game:GetService("UserInputService").InputChanged:Connect(function(input)
-                        if input == dragInput and dragToggle then
-                            local delta = input.Position - dragStart
-                            frame.Position = UDim2.new(
-                                startPos.X.Scale, 
-                                startPos.X.Offset + delta.X,
-                                startPos.Y.Scale, 
-                                startPos.Y.Offset + delta.Y
-                            )
-                        end
-                    end)
-                    
-                    break -- 成功添加拖动功能，退出循环
-                end
+                -- 创建一个小的拖动区域（只在标签的右上角）
+                local dragArea = Instance.new("TextButton")
+                dragArea.Name = "DragArea"
+                dragArea.Size = UDim2.new(0, 20, 0, 20) -- 20x20像素的拖动区域
+                dragArea.Position = UDim2.new(1, -25, 0, 5) -- 右上角位置
+                dragArea.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+                dragArea.BackgroundTransparency = 0.8 -- 半透明
+                dragArea.Text = "⤢" -- 拖动图标
+                dragArea.TextColor3 = Color3.fromRGB(0, 0, 0)
+                dragArea.TextSize = 12
+                dragArea.BorderSizePixel = 0
+                dragArea.ZIndex = frame.ZIndex + 1
+                dragArea.Parent = frame
+                
+                local dragToggle = false
+                local dragInput, dragStart, startPos
+                
+                -- 在拖动区域上添加拖动事件
+                dragArea.InputBegan:Connect(function(input)
+                    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                        dragToggle = true
+                        dragStart = input.Position
+                        startPos = frame.Position
+                        
+                        -- 提高标签层级
+                        frame.ZIndex = 10
+                        dragArea.ZIndex = 11
+                        
+                        input.Changed:Connect(function()
+                            if input.UserInputState == Enum.UserInputState.End then
+                                dragToggle = false
+                                frame.ZIndex = 1
+                                dragArea.ZIndex = 2
+                            end
+                        end)
+                    end
+                end)
+                
+                dragArea.InputChanged:Connect(function(input)
+                    if input.UserInputType == Enum.UserInputType.MouseMovement then
+                        dragInput = input
+                    end
+                end)
+                
+                game:GetService("UserInputService").InputChanged:Connect(function(input)
+                    if input == dragInput and dragToggle then
+                        local delta = input.Position - dragStart
+                        frame.Position = UDim2.new(
+                            startPos.X.Scale, 
+                            startPos.X.Offset + delta.X,
+                            startPos.Y.Scale, 
+                            startPos.Y.Offset + delta.Y
+                        )
+                    end
+                end)
+                
+                break -- 成功添加拖动功能，退出循环
             end
             
             task.wait(0.1) -- 等待标签完全创建
