@@ -1,4 +1,4 @@
--- 橙c美式UI库 - 标准比例版
+-- 橙c美式UI库 - 橙黑渐变版
 local OrangeUI = {}
 
 function OrangeUI:Init(config)
@@ -78,15 +78,15 @@ function OrangeUI:createMainWindow(config)
         end
     end)
 
-    -- 自定义打开按钮
+    -- 橙黑渐变打开按钮
     self.Window:EditOpenButton({
-        Title = "橙C美式脚本中心",
+        Title = "橙C美式",
         Icon = "crown",
         CornerRadius = UDim.new(0,16),
         StrokeThickness = 2,
         Color = ColorSequence.new(
-            Color3.fromHex("FF6B00"),
-            Color3.fromHex("FFA500")
+            Color3.fromHex("FF6B00"),  -- 橙色
+            Color3.fromHex("000000")   -- 黑色
         ),
         Draggable = true,
     })
@@ -116,7 +116,7 @@ end
 
 -- 创建时间标签
 function OrangeUI:createTimeTag()
-    return self.TimeTag -- 已经在初始化时创建
+    return self.TimeTag
 end
 
 -- 创建版本标签
