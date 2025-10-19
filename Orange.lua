@@ -1,4 +1,4 @@
--- 橙c美式UI库 - 完整功能版
+-- 橙c美式UI库 - 仿WindUI结构版
 local OrangeUI = {}
 
 function OrangeUI:Init(config)
@@ -37,10 +37,10 @@ function OrangeUI:createMainWindow(config)
         IconThemed = true,
         Author = "作者: 橙子",
         Folder = "橙C美式",
-        Size = config.Size or UDim2.fromOffset(400, 300),
-        Transparent = config.Transparent or false,
-        Theme = config.Theme or "Dark",
-        BackgroundColor = config.BackgroundColor or Color3.fromRGB(25, 25, 35),
+        Size = UDim2.fromOffset(400, 300),
+        Transparent = false,
+        Theme = "Dark",
+        BackgroundColor = Color3.fromRGB(25, 25, 35),
         User = {
             Enabled = true,
             Callback = function() print("点击了用户信息") end,
@@ -50,15 +50,40 @@ function OrangeUI:createMainWindow(config)
         ScrollBarEnabled = true,
     })
     
+    -- 时间标签
+    self.TimeTag = self.Window:Tag({
+        Title = "00:00:00",
+        Color = Color3.fromHex("#FFA500")
+    })
+    
+    -- 版本标签
+    self.VersionTag = self.Window:Tag({
+        Title = "v1.0",
+        Color = Color3.fromHex("#FFA500")
+    })
+    
+    -- 更新时间
+    task.spawn(function()
+        while true do
+            local now = os.date("*t")
+            local hours = string.format("%02d", now.hour)
+            local minutes = string.format("%02d", now.min)
+            local seconds = string.format("%02d", now.sec)
+            
+            self.TimeTag:SetTitle(hours .. ":" .. minutes .. ":" .. seconds)
+            task.wait(1)
+        end
+    end)
+
     -- 橙黑渐变打开按钮
     self.Window:EditOpenButton({
-        Title = "橙C美式",
+        Title = "橙C美式脚本中心",
         Icon = "crown",
         CornerRadius = UDim.new(0,16),
         StrokeThickness = 2,
         Color = ColorSequence.new(
-            Color3.fromHex("FF6B00"),  -- 橙色
-            Color3.fromHex("000000")   -- 黑色
+            Color3.fromHex("FF6B00"),
+            Color3.fromHex("FFA500")
         ),
         Draggable = true,
     })
@@ -70,24 +95,16 @@ function OrangeUI:createMainWindow(config)
     }
     
     self.Tabs = {}
-    
-    -- 创建时间标签
-    self:createTimeTag()
-    -- 创建版本标签
-    self:createVersionTag(config.Version or "v1.0")
-    
     return self
 end
 
 -- 创建标签
-function OrangeUI:tag(position, title, color, radius, transparent)
+function OrangeUI:tag(position, title, color)
     position = position or "right"
     
     local tagObj = self.Window:Tag({
         Title = title,
-        Color = color or Color3.fromHex("#FFA500"),
-        Radius = radius or 999,
-        Transparent = transparent or false
+        Color = color or Color3.fromHex("#FFA500")
     })
     
     table.insert(self.Tags[position], tagObj)
@@ -96,30 +113,14 @@ end
 
 -- 创建时间标签
 function OrangeUI:createTimeTag()
-    self.TimeTag = self:tag("right", "00:00:00", Color3.fromHex("#FFA500"))
-    
-    task.spawn(function()
-        while self.TimeTag do
-            local now = os.date("*t")
-            local hours = string.format("%02d", now.hour)
-            local minutes = string.format("%02d", now.min)
-            local seconds = string.format("%02d", now.sec)
-            
-            if self.TimeTag and self.TimeTag.SetTitle then
-                pcall(function()
-                    self.TimeTag:SetTitle(hours .. ":" .. minutes .. ":" .. seconds)
-                end)
-            end
-            task.wait(1)
-        end
-    end)
-    
     return self.TimeTag
 end
 
 -- 创建版本标签
 function OrangeUI:createVersionTag(version)
-    self.VersionTag = self:tag("right", version or "v1.0", Color3.fromHex("#FFA500"))
+    if version and self.VersionTag then
+        self.VersionTag:SetTitle(version)
+    end
     return self.VersionTag
 end
 
@@ -161,105 +162,43 @@ function OrangeUI:settings(title)
     return tab
 end
 
--- 完整控件函数
-function OrangeUI:btn(tab, title, desc, callback, variant, icon)
-    return tab:Button({
+-- 控件函数
+function OrangeUI:btn(tab, title, desc, callback)
+    tab:Button({
         Title = title,
         Desc = desc,
-        Callback = callback,
-        Variant = variant or "Primary",
-        Icon = icon
+        Callback = callback
     })
 end
 
-function OrangeUI:toggle(tab, title, desc, value, callback, icon)
-    return tab:Toggle({
-        Title = title,
-        Desc = desc,
-        Value = value or false,
-        Callback = callback,
-        Icon = icon
-    })
-end
-
-function UI:slider(tab, title, desc, value, min, max, callback, suffix)
-    return tab:Slider({
-        Title = title,
-        Desc = desc,
-        Value = {Default = value or 50, Min = min or 0, Max = max or 100},
-        Callback = callback,
-        Suffix = suffix or ""
-    })
-end
-
-function OrangeUI:input(tab, title, desc, placeholder, callback, icon)
-    return tab:Input({
+function OrangeUI:input(tab, title, desc, placeholder, callback)
+    tab:Input({
         Title = title,
         Desc = desc,
         Placeholder = placeholder or "请输入...",
-        Callback = callback,
-        Icon = icon
-    })
-end
-
-function OrangeUI:dropdown(tab, title, desc, options, default, callback, icon)
-    return tab:Dropdown({
-        Title = title,
-        Desc = desc,
-        Values = options or {},
-        Value = default,
-        Callback = callback,
-        Icon = icon
-    })
-end
-
-function OrangeUI:color(tab, title, desc, default, callback, icon)
-    return tab:Colorpicker({
-        Title = title,
-        Desc = desc,
-        Default = default or Color3.fromRGB(255, 165, 0),
-        Callback = callback,
-        Icon = icon
-    })
-end
-
-function OrangeUI:keybind(tab, title, desc, default, callback, icon)
-    return tab:Keybind({
-        Title = title,
-        Desc = desc,
-        Value = default or "RightShift",
-        Callback = callback,
-        Icon = icon
+        Callback = callback
     })
 end
 
 function OrangeUI:paragraph(tab, title, desc)
-    return tab:Paragraph({
+    tab:Paragraph({
         Title = title,
         Desc = desc
     })
 end
 
-function OrangeUI:section(tab, title, opened)
-    return tab:Section({
-        Title = title,
-        Opened = opened or true
-    })
-end
-
 -- 通知
-function OrangeUI:notify(title, content, icon, duration)
+function OrangeUI:notify(title, content, icon)
     self.WindUI:Notify({
         Title = title,
         Content = content,
-        Icon = icon or "info",
-        Duration = duration or 5
+        Icon = icon or "info"
     })
 end
 
 function OrangeUI:setTheme(theme)
     self.WindUI:SetTheme(theme)
-    self:notify("主题切换", "已切换到 " .. theme .. " 主题", "palette", 3)
+    self:notify("主题切换", "已切换到 " .. theme .. " 主题", "palette")
 end
 
 return OrangeUI
