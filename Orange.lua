@@ -1,4 +1,4 @@
--- 橙c美式UI库 v1.0 - 带标签位置定义
+-- 橙c美式UI库 v1.0 - 标签靠右显示
 local OrangeUI = {}
 
 function OrangeUI:Init(config)
@@ -47,7 +47,7 @@ function OrangeUI:createMainWindow(config)
     return self
 end
 
--- 定义标签位置
+-- 定义标签位置（默认靠右显示）
 function OrangeUI:tag(position, title, color, radius)
     position = position or "right" -- 默认在右侧
     
@@ -60,7 +60,60 @@ function OrangeUI:tag(position, title, color, radius)
     -- 存储标签对象
     table.insert(self.Tags[position], tagObj)
     
+    -- 设置标签位置靠右
+    task.spawn(function()
+        local maxAttempts = 10
+        local attempt = 0
+        
+        local function setPosition()
+            attempt = attempt + 1
+            if attempt > maxAttempts then return end
+            
+            if tagObj and tagObj.Instance then
+                local frame = tagObj.Instance
+                -- 计算靠右位置（屏幕宽度 - 标签宽度 - 边距）
+                local screenWidth = game:GetService("CoreGui").AbsoluteSize.X
+                local tagWidth = frame.AbsoluteSize.X
+                local rightMargin = 10 -- 右边距
+                local xPosition = screenWidth - tagWidth - rightMargin
+                
+                frame.Position = UDim2.new(0, xPosition, 0, 10)
+            else
+                task.wait(0.1)
+                setPosition()
+            end
+        end
+        
+        setPosition()
+    end)
+    
     return tagObj
+end
+
+-- 创建时间标签（靠右显示）
+function OrangeUI:createTimeTag()
+    self.TimeTag = self:tag("right", "00:00:00", Color3.fromHex("#FFA500"))
+    
+    -- 更新时间
+    task.spawn(function()
+        while true do
+            local now = os.date("*t")
+            local hours = string.format("%02d", now.hour)
+            local minutes = string.format("%02d", now.min)
+            local seconds = string.format("%02d", now.sec)
+            
+            self.TimeTag:SetTitle(hours .. ":" .. minutes .. ":" .. seconds)
+            task.wait(1)
+        end
+    end)
+    
+    return self.TimeTag
+end
+
+-- 创建版本标签（靠右显示）
+function OrangeUI:createVersionTag(version)
+    self.VersionTag = self:tag("right", version or "v1.0", Color3.fromHex("#FFA500"))
+    return self.VersionTag
 end
 
 -- 批量创建标签
@@ -91,32 +144,6 @@ function OrangeUI:clearTags(position)
             self.Tags[pos] = {}
         end
     end
-end
-
--- 创建时间标签（右侧）
-function OrangeUI:createTimeTag()
-    self.TimeTag = self:tag("right", "00:00:00", Color3.fromHex("#FFA500"))
-    
-    -- 更新时间
-    task.spawn(function()
-        while true do
-            local now = os.date("*t")
-            local hours = string.format("%02d", now.hour)
-            local minutes = string.format("%02d", now.min)
-            local seconds = string.format("%02d", now.sec)
-            
-            self.TimeTag:SetTitle(hours .. ":" .. minutes .. ":" .. seconds)
-            task.wait(1)
-        end
-    end)
-    
-    return self.TimeTag
-end
-
--- 创建版本标签（右侧）
-function OrangeUI:createVersionTag(version)
-    self.VersionTag = self:tag("right", version or "v1.0", Color3.fromHex("#FFA500"))
-    return self.VersionTag
 end
 
 function OrangeUI:cz(title)
