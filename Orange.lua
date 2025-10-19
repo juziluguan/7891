@@ -1,88 +1,160 @@
--- 橙C美式UI - 简化版
-local OrangeUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/juziluguan/7891/main/Orange.lua"))()
+-- 橙c美式UI库 - 修复版
+local OrangeUI = {}
 
-local ui = OrangeUI:Init({
-    Title = "橙C美式 1.0"
-})
-
--- 等待窗口创建完成
-task.wait(2)
-
--- 为标签页添加橙黑渐变效果
-task.spawn(function()
-    task.wait(1)
+function OrangeUI:Init(config)
+    config = config or {}
     
-    if ui.Window and ui.Window.Instance then
-        -- 查找所有标签页文本
-        local function findTabLabels(obj)
-            local tabLabels = {}
-            for _, child in ipairs(obj:GetDescendants()) do
-                if child:IsA("TextLabel") or child:IsA("TextButton") then
-                    -- 只查找"主页"和"设置"标签
-                    local tabNames = {"主页", "设置"}
-                    for _, name in ipairs(tabNames) do
-                        if child.Text and string.find(child.Text, name) then
-                            table.insert(tabLabels, child)
-                            break
-                        end
-                    end
-                end
-            end
-            return tabLabels
-        end
-        
-        local tabLabels = findTabLabels(ui.Window.Instance)
-        
-        for _, label in ipairs(tabLabels) do
-            -- 为每个标签页文本添加橙黑渐变
-            local gradient = Instance.new("UIGradient")
-            gradient.Color = ColorSequence.new({
-                ColorSequenceKeypoint.new(0, Color3.fromHex("FF6B00")),  -- 橙色
-                ColorSequenceKeypoint.new(0.5, Color3.fromHex("FF8C00")), -- 亮橙色
-                ColorSequenceKeypoint.new(1, Color3.fromHex("000000"))   -- 黑色
-            })
-            gradient.Rotation = 90
-            gradient.Parent = label
+    self.WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"))()
+    
+    -- 直接创建窗口，不经过弹窗
+    self:createMainWindow(config)
+    
+    return self
+end
+
+function OrangeUI:createMainWindow(config)
+    self.Window = self.WindUI:CreateWindow({
+        Title = config.Title or "橙C美式 1.0",
+        Size = UDim2.fromOffset(400, 300),
+        Folder = "橙C美式UI",
+        Theme = "Dark"
+    })
+    
+    -- 标签容器
+    self.Tags = {
+        left = {},
+        right = {}
+    }
+    
+    self.Tabs = {}
+    return self
+end
+
+-- 创建标签
+function OrangeUI:tag(position, title, color)
+    position = position or "right"
+    
+    local tagObj = self.Window:Tag({
+        Title = title,
+        Color = color or Color3.fromHex("#FFA500")
+    })
+    
+    table.insert(self.Tags[position], tagObj)
+    return tagObj
+end
+
+-- 创建时间标签
+function OrangeUI:createTimeTag()
+    self.TimeTag = self:tag("right", "00:00:00", Color3.fromHex("#FFA500"))
+    
+    task.spawn(function()
+        while self.TimeTag do
+            local now = os.date("*t")
+            local hours = string.format("%02d", now.hour)
+            local minutes = string.format("%02d", now.min)
+            local seconds = string.format("%02d", now.sec)
             
-            -- 添加文字描边
-            local stroke = Instance.new("UIStroke")
-            stroke.Color = Color3.fromHex("FF6B00")
-            stroke.Thickness = 1
-            stroke.Transparency = 0.3
-            stroke.Parent = label
+            if self.TimeTag and self.TimeTag.SetTitle then
+                pcall(function()
+                    self.TimeTag:SetTitle(hours .. ":" .. minutes .. ":" .. seconds)
+                end)
+            end
+            task.wait(1)
+        end
+    end)
+    
+    return self.TimeTag
+end
+
+-- 创建版本标签
+function OrangeUI:createVersionTag(version)
+    self.VersionTag = self:tag("right", version or "v1.0", Color3.fromHex("#FFA500"))
+    return self.VersionTag
+end
+
+-- 清除标签
+function OrangeUI:clearTags(position)
+    if position then
+        for _, tag in ipairs(self.Tags[position] or {}) do
+            pcall(function() tag:Destroy() end)
+        end
+        self.Tags[position] = {}
+    else
+        for pos, tags in pairs(self.Tags) do
+            for _, tag in ipairs(tags) do
+                pcall(function() tag:Destroy() end)
+            end
+            self.Tags[pos] = {}
         end
     end
-end)
+end
 
--- 主页
-local MainTab = ui:cz("主页", "user")
+-- 创建标签页
+function OrangeUI:cz(title)
+    local tab = self.Window:Tab({
+        Title = title or "主页",
+        Icon = "user"
+    })
+    self.Tabs[title] = tab
+    return tab
+end
 
-MainTab:Paragraph({
-    Title = "欢迎使用橙C美式",
-    Desc = "感谢您的使用！",
-})
+function OrangeUI:settings(title)
+    local tab = self.Window:Tab({
+        Title = title or "设置",
+        Icon = "settings"
+    })
+    self.Tabs[title] = tab
+    return tab
+end
 
--- 输入框：自定义标签
-ui:input(MainTab, "自定义标签", "输入要显示的标签文字", "例如: 管理员", function(text)
-    if text and text ~= "" then
-        ui:tag("right", text, Color3.fromHex("#FF6B35"))
-        ui:notify("标签更新", "标签已显示: " .. text, "tag")
-    end
-end)
+-- 控件函数
+function OrangeUI:btn(tab, title, desc, callback)
+    tab:Button({
+        Title = title,
+        Desc = desc,
+        Callback = callback
+    })
+end
 
--- 添加初始标签
-ui:tag("right", "已加载", Color3.fromHex("#4ECDC4"))
-ui:tag("right", "稳定版", Color3.fromHex("#96CEB4"))
+function OrangeUI:input(tab, title, desc, placeholder, callback)
+    tab:Input({
+        Title = title,
+        Desc = desc,
+        Placeholder = placeholder or "请输入...",
+        Callback = callback
+    })
+end
 
--- 设置页面
-local SettingsTab = ui:settings("设置")
+function OrangeUI:dropdown(tab, title, desc, options, default, callback)
+    tab:Dropdown({
+        Title = title,
+        Desc = desc,
+        Values = options or {},
+        Value = default,
+        Callback = callback
+    })
+end
 
-ui:dropdown(SettingsTab, "选择主题", "切换UI主题颜色", 
-    {"Dark", "Light"}, 
-    "Dark", 
-    function(theme)
-        ui:setTheme(theme)
-    end
-)
+function OrangeUI:paragraph(tab, title, desc)
+    tab:Paragraph({
+        Title = title,
+        Desc = desc
+    })
+end
 
-ui:notify("橙C美式", "脚本加载完成", "check-circle")
+-- 通知
+function OrangeUI:notify(title, content, icon)
+    self.WindUI:Notify({
+        Title = title,
+        Content = content,
+        Icon = icon or "info"
+    })
+end
+
+function OrangeUI:setTheme(theme)
+    self.WindUI:SetTheme(theme)
+    self:notify("主题切换", "已切换到 " .. theme .. " 主题", "palette")
+end
+
+return OrangeUI
